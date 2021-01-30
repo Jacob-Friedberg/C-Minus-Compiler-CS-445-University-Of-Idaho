@@ -1,0 +1,41 @@
+Line 1 Token: STRINGCONST Value: "DOUBLE QUOTES"  Len: 13  Input: "DOUBLE QUOTES"
+Line 2 Token: STRINGCONST Value: "dog"  Len: 3  Input: "dog"
+Line 3 Token: STRINGCONST Value: ""  Len: 0  Input: ""
+Line 4 Token: STRINGCONST Value: "123"  Len: 3  Input: "123"
+Line 5 Token: STRINGCONST Value: " 	"  Len: 2  Input: " 	"
+Line 6 Token: STRINGCONST Value: "'"  Len: 1  Input: "'"
+Line 7 Token: STRINGCONST Value: "'"\^"  Len: 4  Input: "\'\"\\\^"
+Line 8 Token: STRINGCONST Value: "\^"  Len: 2  Input: "\\\^"
+Line 9 Token: STRINGCONST Value: "\x"  Len: 2  Input: "\\\x"
+Line 10 Token: STRINGCONST Value: "\x"  Len: 2  Input: "\\x"
+Line 11 Token: STRINGCONST Value: "x"  Len: 1  Input: "\x"
+Line 12 Token: STRINGCONST Value: "adog'"\^"  Len: 8  Input: "a\d\o\g\'\"\\\^"
+Line 13 Token: STRINGCONST Value: "dog cat"  Len: 7  Input: "dog cat"
+Line 14 Token: STRINGCONST Value: "dogs^Icats^Jrats"  Len: 16  Input: "dogs^Icats^Jrats"
+Line 15 Token: STRINGCONST Value: "dogs"  Len: 4  Input: "dogs"
+Line 15 Token: STRINGCONST Value: "cats"  Len: 4  Input: "cats"
+Line 15 Token: STRINGCONST Value: "rats"  Len: 4  Input: "rats"
+Line 16 Token: STRINGCONST Value: "dogs""  Len: 5  Input: "dogs\""
+Line 16 Token: ID Value: cats
+Line 16 Token: STRINGCONST Value: ""rats"  Len: 5  Input: "\"rats"
+Line 17 Token: STRINGCONST Value: "SINGLE QUOTES"  Len: 13  Input: "SINGLE QUOTES"
+Line 18 Token: CHARCONST Value: 'd'  Input: 'd'
+Line 19 Token: CHARCONST Value: '1'  Input: '1'
+Line 20 Token: CHARCONST Value: ' '  Input: ' '
+Line 21 Token: CHARCONST Value: '	'  Input: '	'
+Line 22 Token: CHARCONST Value: '"'  Input: '"'
+Line 23 Token: CHARCONST Value: '"'  Input: '\"'
+Line 24 Token: CHARCONST Value: '\'  Input: '\\'
+Line 25 Token: CHARCONST Value: '^'  Input: '\^'
+Line 26 Token: CHARCONST Value: 'x'  Input: '\x'
+Line 27 Token: CHARCONST Value: '@'  Input: '\@'
+Line 28 Token: CHARCONST Value: 'a'  Input: 'a'
+Line 29 Token: CHARCONST Value: 'd'  Input: '\d'
+WARNING(30): character is 2 characters long and not a single character: ''^I''.  The first char will be used.
+Line 30 Token: CHARCONST Value: '^'  Input: '^I'
+WARNING(31): character is 2 characters long and not a single character: ''^J''.  The first char will be used.
+Line 31 Token: CHARCONST Value: '^'  Input: '^J'
+Line 32 Token: CHARCONST Value: 't'  Input: '\t'
+Line 33 Token: CHARCONST Value: '
+'  Input: '\n'
+Line 34 Token: CHARCONST Value: '
