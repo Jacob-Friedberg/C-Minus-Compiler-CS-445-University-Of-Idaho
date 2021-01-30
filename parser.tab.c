@@ -189,7 +189,12 @@ extern int yydebug;
     DIV = 295,
     MULT = 296,
     PERC = 297,
-    ADDASS = 298
+    ADDASS = 298,
+    ASS = 299,
+    OPEN_BRACK = 300,
+    CLOSE_BRACK = 301,
+    DEC = 302,
+    INC = 303
   };
 #endif
 
@@ -201,7 +206,7 @@ union YYSTYPE
 
     TokenData *tokenData;
 
-#line 205 "parser.tab.c"
+#line 210 "parser.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -518,21 +523,21 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  39
+#define YYFINAL  46
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   84
+#define YYLAST   94
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  44
+#define YYNTOKENS  49
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  3
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  40
+#define YYNRULES  46
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  41
+#define YYNSTATES  48
 
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   298
+#define YYMAXUTOK   303
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -573,18 +578,19 @@ static const yytype_int8 yytranslate[] =
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
       25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
-      35,    36,    37,    38,    39,    40,    41,    42,    43
+      35,    36,    37,    38,    39,    40,    41,    42,    43,    44,
+      45,    46,    47,    48
 };
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    51,    51,    52,    55,    56,    58,    71,    75,    77,
-      79,    81,    83,    84,    85,    86,    87,    88,    89,    90,
-      91,    92,    93,    94,    95,    96,   100,   104,   105,   106,
-     107,   108,   109,   110,   111,   112,   113,   114,   115,   116,
-     117
+       0,    52,    52,    53,    56,    57,    59,    72,    76,    78,
+      80,    82,    84,    85,    86,    87,    88,    89,    90,    91,
+      92,    93,    94,    95,    96,    97,   101,   105,   106,   107,
+     108,   109,   110,   111,   112,   113,   114,   115,   116,   117,
+     118,   119,   120,   121,   122,   123,   124
 };
 #endif
 
@@ -598,8 +604,9 @@ static const char *const yytname[] =
   "DO", "FOR", "TO", "BY", "RETURN", "BREAK", "STATIC", "NOT", "AND", "OR",
   "TRUE", "FALSE", "OPEN_BRACE", "CLOSE_BRACE", "OPEN_PAREN",
   "CLOSE_PAREN", "SEMI", "COMMA", "LESS", "GREATER", "LESS_EQ", "GREAT_EQ",
-  "EQUAL", "COLON", "EQ", "MINUS", "DIV", "MULT", "PERC", "ADDASS",
-  "$accept", "tokenlist", "token", YY_NULLPTR
+  "EQUAL", "COLON", "EQ", "MINUS", "DIV", "MULT", "PERC", "ADDASS", "ASS",
+  "OPEN_BRACK", "CLOSE_BRACK", "DEC", "INC", "$accept", "tokenlist",
+  "token", YY_NULLPTR
 };
 #endif
 
@@ -612,11 +619,11 @@ static const yytype_int16 yytoknum[] =
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
      275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
      285,   286,   287,   288,   289,   290,   291,   292,   293,   294,
-     295,   296,   297,   298
+     295,   296,   297,   298,   299,   300,   301,   302,   303
 };
 # endif
 
-#define YYPACT_NINF (-37)
+#define YYPACT_NINF (-44)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -630,11 +637,11 @@ static const yytype_int16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      41,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,
-     -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,
-     -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,
-     -37,   -37,   -37,   -37,   -37,   -37,   -37,     0,   -37,   -37,
-     -37
+      46,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,
+     -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,
+     -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,
+     -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,   -44,
+     -44,   -44,   -44,   -44,     0,   -44,   -44,   -44
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -644,21 +651,21 @@ static const yytype_int8 yydefact[] =
 {
        0,     4,     5,     6,     7,     8,    24,     9,    10,    11,
       12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
-      22,    23,    25,    26,    27,    28,    29,    30,    39,    31,
-      32,    33,    34,    35,    36,    37,    38,     0,     3,     1,
-       2
+      22,    23,    25,    26,    27,    28,    29,    30,    46,    31,
+      41,    42,    32,    38,    34,    35,    36,    37,    43,    33,
+      39,    40,    44,    45,     0,     3,     1,     2
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -37,   -37,   -36
+     -44,   -44,   -43
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,    37,    38
+      -1,    44,    45
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -666,28 +673,30 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      39,    40,     0,     1,     2,     3,     4,     5,     6,     7,
+      46,    47,     0,     1,     2,     3,     4,     5,     6,     7,
        8,     9,    10,    11,    12,    13,    14,    15,    16,    17,
       18,    19,    20,    21,    22,    23,    24,    25,    26,    27,
-      28,    29,     0,     0,     0,     0,     0,    30,    31,    32,
-      33,    34,    35,    36,     1,     2,     3,     4,     5,     6,
-       7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
-      17,    18,    19,    20,    21,    22,    23,    24,    25,    26,
-      27,    28,    29,     0,     0,     0,     0,     0,    30,    31,
-      32,    33,    34,    35,    36
+      28,    29,    30,    31,     0,     0,     0,    32,    33,    34,
+      35,    36,    37,    38,    39,    40,    41,    42,    43,     1,
+       2,     3,     4,     5,     6,     7,     8,     9,    10,    11,
+      12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
+      22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
+       0,     0,     0,    32,    33,    34,    35,    36,    37,    38,
+      39,    40,    41,    42,    43
 };
 
 static const yytype_int8 yycheck[] =
 {
-       0,    37,    -1,     3,     4,     5,     6,     7,     8,     9,
+       0,    44,    -1,     3,     4,     5,     6,     7,     8,     9,
       10,    11,    12,    13,    14,    15,    16,    17,    18,    19,
       20,    21,    22,    23,    24,    25,    26,    27,    28,    29,
-      30,    31,    -1,    -1,    -1,    -1,    -1,    37,    38,    39,
-      40,    41,    42,    43,     3,     4,     5,     6,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      19,    20,    21,    22,    23,    24,    25,    26,    27,    28,
-      29,    30,    31,    -1,    -1,    -1,    -1,    -1,    37,    38,
-      39,    40,    41,    42,    43
+      30,    31,    32,    33,    -1,    -1,    -1,    37,    38,    39,
+      40,    41,    42,    43,    44,    45,    46,    47,    48,     3,
+       4,     5,     6,     7,     8,     9,    10,    11,    12,    13,
+      14,    15,    16,    17,    18,    19,    20,    21,    22,    23,
+      24,    25,    26,    27,    28,    29,    30,    31,    32,    33,
+      -1,    -1,    -1,    37,    38,    39,    40,    41,    42,    43,
+      44,    45,    46,    47,    48
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
@@ -697,18 +706,18 @@ static const yytype_int8 yystos[] =
        0,     3,     4,     5,     6,     7,     8,     9,    10,    11,
       12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
       22,    23,    24,    25,    26,    27,    28,    29,    30,    31,
-      37,    38,    39,    40,    41,    42,    43,    45,    46,     0,
-      46
+      32,    33,    37,    38,    39,    40,    41,    42,    43,    44,
+      45,    46,    47,    48,    50,    51,     0,    51
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    44,    45,    45,    46,    46,    46,    46,    46,    46,
-      46,    46,    46,    46,    46,    46,    46,    46,    46,    46,
-      46,    46,    46,    46,    46,    46,    46,    46,    46,    46,
-      46,    46,    46,    46,    46,    46,    46,    46,    46,    46,
-      46
+       0,    49,    50,    50,    51,    51,    51,    51,    51,    51,
+      51,    51,    51,    51,    51,    51,    51,    51,    51,    51,
+      51,    51,    51,    51,    51,    51,    51,    51,    51,    51,
+      51,    51,    51,    51,    51,    51,    51,    51,    51,    51,
+      51,    51,    51,    51,    51,    51,    51
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
@@ -718,7 +727,7 @@ static const yytype_int8 yyr2[] =
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1
+       1,     1,     1,     1,     1,     1,     1
 };
 
 
@@ -1414,20 +1423,20 @@ yyreduce:
   switch (yyn)
     {
   case 4:
-#line 55 "parser.y"
+#line 56 "parser.y"
                                 {printf("Line %d Token: ID Value: %s\n",(yyvsp[0].tokenData)->lineNum,(yyvsp[0].tokenData)->tokenStr);}
-#line 1420 "parser.tab.c"
+#line 1429 "parser.tab.c"
     break;
 
   case 5:
-#line 56 "parser.y"
+#line 57 "parser.y"
                                 {printf("Line %d Token: NUMCONST Value: %d  Input: %s\n",   (yyvsp[0].tokenData)->lineNum,
                                                                                             (yyvsp[0].tokenData)->nValue,(yyvsp[0].tokenData)->tokenStr);}
-#line 1427 "parser.tab.c"
+#line 1436 "parser.tab.c"
     break;
 
   case 6:
-#line 58 "parser.y"
+#line 59 "parser.y"
                                 {
                                     if(strlen((yyvsp[0].tokenData)->sValue) > 1)
                                     {
@@ -1441,222 +1450,258 @@ yyreduce:
                                                                                             (yyvsp[0].tokenData)->cValue,(yyvsp[0].tokenData)->tokenStr);
                                                                                             
                                 }
-#line 1445 "parser.tab.c"
+#line 1454 "parser.tab.c"
     break;
 
   case 7:
-#line 71 "parser.y"
+#line 72 "parser.y"
                                 {printf("Line %d Token: STRINGCONST Value: \"%s\"  Len: %d  Input: %s\n",(yyvsp[0].tokenData)->lineNum,
                                                                                             (yyvsp[0].tokenData)->sValue,
                                                                                             ((int)strlen((yyvsp[0].tokenData)->sValue)),
                                                                                             (yyvsp[0].tokenData)->tokenStr);}
-#line 1454 "parser.tab.c"
+#line 1463 "parser.tab.c"
     break;
 
   case 8:
-#line 75 "parser.y"
+#line 76 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1460 "parser.tab.c"
+#line 1469 "parser.tab.c"
     break;
 
   case 9:
-#line 77 "parser.y"
+#line 78 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1466 "parser.tab.c"
+#line 1475 "parser.tab.c"
     break;
 
   case 10:
-#line 79 "parser.y"
+#line 80 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1472 "parser.tab.c"
+#line 1481 "parser.tab.c"
     break;
 
   case 11:
-#line 81 "parser.y"
+#line 82 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1478 "parser.tab.c"
+#line 1487 "parser.tab.c"
     break;
 
   case 12:
-#line 83 "parser.y"
+#line 84 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1484 "parser.tab.c"
+#line 1493 "parser.tab.c"
     break;
 
   case 13:
-#line 84 "parser.y"
+#line 85 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1490 "parser.tab.c"
+#line 1499 "parser.tab.c"
     break;
 
   case 14:
-#line 85 "parser.y"
+#line 86 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1496 "parser.tab.c"
+#line 1505 "parser.tab.c"
     break;
 
   case 15:
-#line 86 "parser.y"
+#line 87 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1502 "parser.tab.c"
+#line 1511 "parser.tab.c"
     break;
 
   case 16:
-#line 87 "parser.y"
+#line 88 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1508 "parser.tab.c"
+#line 1517 "parser.tab.c"
     break;
 
   case 17:
-#line 88 "parser.y"
+#line 89 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1514 "parser.tab.c"
+#line 1523 "parser.tab.c"
     break;
 
   case 18:
-#line 89 "parser.y"
+#line 90 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1520 "parser.tab.c"
+#line 1529 "parser.tab.c"
     break;
 
   case 19:
-#line 90 "parser.y"
+#line 91 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1526 "parser.tab.c"
+#line 1535 "parser.tab.c"
     break;
 
   case 20:
-#line 91 "parser.y"
+#line 92 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1532 "parser.tab.c"
+#line 1541 "parser.tab.c"
     break;
 
   case 21:
-#line 92 "parser.y"
+#line 93 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1538 "parser.tab.c"
+#line 1547 "parser.tab.c"
     break;
 
   case 22:
-#line 93 "parser.y"
+#line 94 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1544 "parser.tab.c"
+#line 1553 "parser.tab.c"
     break;
 
   case 23:
-#line 94 "parser.y"
+#line 95 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1550 "parser.tab.c"
+#line 1559 "parser.tab.c"
     break;
 
   case 24:
-#line 95 "parser.y"
+#line 96 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1556 "parser.tab.c"
+#line 1565 "parser.tab.c"
     break;
 
   case 25:
-#line 96 "parser.y"
+#line 97 "parser.y"
                                 {printf("Line %d Token: BOOLCONST Value: %d  Input: %s\n",(yyvsp[0].tokenData)->lineNum,
                                                                                         (yyvsp[0].tokenData)->nValue,
                                                                                         (yyvsp[0].tokenData)->tokenStr);}
-#line 1564 "parser.tab.c"
+#line 1573 "parser.tab.c"
     break;
 
   case 26:
-#line 100 "parser.y"
+#line 101 "parser.y"
                                 {printf("Line %d Token: BOOLCONST Value: %d  Input: %s\n",(yyvsp[0].tokenData)->lineNum,
                                                                                         (yyvsp[0].tokenData)->nValue,
                                                                                         (yyvsp[0].tokenData)->tokenStr);}
-#line 1572 "parser.tab.c"
+#line 1581 "parser.tab.c"
     break;
 
   case 27:
-#line 104 "parser.y"
+#line 105 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1578 "parser.tab.c"
+#line 1587 "parser.tab.c"
     break;
 
   case 28:
-#line 105 "parser.y"
+#line 106 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1584 "parser.tab.c"
+#line 1593 "parser.tab.c"
     break;
 
   case 29:
-#line 106 "parser.y"
+#line 107 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1590 "parser.tab.c"
+#line 1599 "parser.tab.c"
     break;
 
   case 30:
-#line 107 "parser.y"
+#line 108 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1596 "parser.tab.c"
+#line 1605 "parser.tab.c"
     break;
 
   case 31:
-#line 108 "parser.y"
+#line 109 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1602 "parser.tab.c"
+#line 1611 "parser.tab.c"
     break;
 
   case 32:
-#line 109 "parser.y"
+#line 110 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1608 "parser.tab.c"
+#line 1617 "parser.tab.c"
     break;
 
   case 33:
-#line 110 "parser.y"
-                              {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1614 "parser.tab.c"
+#line 111 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
+#line 1623 "parser.tab.c"
     break;
 
   case 34:
-#line 111 "parser.y"
-                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1620 "parser.tab.c"
+#line 112 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
+#line 1629 "parser.tab.c"
     break;
 
   case 35:
-#line 112 "parser.y"
-                               {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1626 "parser.tab.c"
+#line 113 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
+#line 1635 "parser.tab.c"
     break;
 
   case 36:
-#line 113 "parser.y"
+#line 114 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1632 "parser.tab.c"
+#line 1641 "parser.tab.c"
     break;
 
   case 37:
-#line 114 "parser.y"
+#line 115 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1638 "parser.tab.c"
+#line 1647 "parser.tab.c"
     break;
 
   case 38:
-#line 115 "parser.y"
-                                  {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1644 "parser.tab.c"
+#line 116 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,"EQ");}
+#line 1653 "parser.tab.c"
     break;
 
   case 39:
-#line 116 "parser.y"
+#line 117 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1650 "parser.tab.c"
+#line 1659 "parser.tab.c"
     break;
 
   case 40:
-#line 117 "parser.y"
+#line 118 "parser.y"
                                 {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
-#line 1656 "parser.tab.c"
+#line 1665 "parser.tab.c"
+    break;
+
+  case 41:
+#line 119 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
+#line 1671 "parser.tab.c"
+    break;
+
+  case 42:
+#line 120 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
+#line 1677 "parser.tab.c"
+    break;
+
+  case 43:
+#line 121 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,"ADDASS");}
+#line 1683 "parser.tab.c"
+    break;
+
+  case 44:
+#line 122 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,"DEC");}
+#line 1689 "parser.tab.c"
+    break;
+
+  case 45:
+#line 123 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,"INC");}
+#line 1695 "parser.tab.c"
+    break;
+
+  case 46:
+#line 124 "parser.y"
+                                {printf("Line %d Token: %s\n",(yyvsp[0].tokenData)->lineNum,toUpperString((yyvsp[0].tokenData)->tokenStr));}
+#line 1701 "parser.tab.c"
     break;
 
 
-#line 1660 "parser.tab.c"
+#line 1705 "parser.tab.c"
 
       default: break;
     }
@@ -1888,7 +1933,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 119 "parser.y"
+#line 127 "parser.y"
 
 extern int yydebug;
 int main(int argc, char *argv[])

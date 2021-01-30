@@ -89,7 +89,12 @@ extern int yydebug;
     DIV = 295,
     MULT = 296,
     PERC = 297,
-    ADDASS = 298
+    ADDASS = 298,
+    ASS = 299,
+    OPEN_BRACK = 300,
+    CLOSE_BRACK = 301,
+    DEC = 302,
+    INC = 303
   };
 #endif
 
@@ -101,7 +106,7 @@ union YYSTYPE
 
     TokenData *tokenData;
 
-#line 105 "parser.tab.h"
+#line 110 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

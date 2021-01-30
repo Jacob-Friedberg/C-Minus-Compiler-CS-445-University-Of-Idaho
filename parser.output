@@ -1,18 +1,8 @@
 Terminals unused in grammar
 
-    LESS
-    GREATER
     LESS_EQ
     GREAT_EQ
     EQUAL
-
-
-Rules useless in parser due to conflicts
-
-   39 token: SEMI
-
-
-State 28 conflicts: 37 reduce/reduce
 
 
 Grammar
@@ -51,14 +41,20 @@ Grammar
    29      | CLOSE_PAREN
    30      | COMMA
    31      | COLON
-   32      | EQ
+   32      | ASS
    33      | MINUS
    34      | DIV
    35      | MULT
    36      | PERC
-   37      | ADDASS
-   38      | SEMI
-   39      | SEMI
+   37      | EQ
+   38      | OPEN_BRACK
+   39      | CLOSE_BRACK
+   40      | LESS
+   41      | GREATER
+   42      | ADDASS
+   43      | DEC
+   44      | INC
+   45      | SEMI
 
 
 Terminals, with rules where they appear
@@ -92,31 +88,36 @@ Terminals, with rules where they appear
     CLOSE_BRACE <tokenData> (282) 27
     OPEN_PAREN <tokenData> (283) 28
     CLOSE_PAREN <tokenData> (284) 29
-    SEMI <tokenData> (285) 38 39
+    SEMI <tokenData> (285) 45
     COMMA <tokenData> (286) 30
-    LESS <tokenData> (287)
-    GREATER <tokenData> (288)
+    LESS <tokenData> (287) 40
+    GREATER <tokenData> (288) 41
     LESS_EQ <tokenData> (289)
     GREAT_EQ <tokenData> (290)
     EQUAL <tokenData> (291)
     COLON <tokenData> (292) 31
-    EQ <tokenData> (293) 32
+    EQ <tokenData> (293) 37
     MINUS <tokenData> (294) 33
     DIV <tokenData> (295) 34
     MULT <tokenData> (296) 35
     PERC <tokenData> (297) 36
-    ADDASS <tokenData> (298) 37
+    ADDASS <tokenData> (298) 42
+    ASS <tokenData> (299) 32
+    OPEN_BRACK <tokenData> (300) 38
+    CLOSE_BRACK <tokenData> (301) 39
+    DEC <tokenData> (302) 43
+    INC <tokenData> (303) 44
 
 
 Nonterminals, with rules where they appear
 
-    $accept (44)
+    $accept (49)
         on left: 0
-    tokenlist (45)
+    tokenlist (50)
         on left: 1 2
         on right: 0 1
-    token (46)
-        on left: 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39
+    token (51)
+        on left: 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45
         on right: 1 2
 
 
@@ -153,16 +154,23 @@ State 0
     CLOSE_PAREN  shift, and go to state 27
     SEMI         shift, and go to state 28
     COMMA        shift, and go to state 29
-    COLON        shift, and go to state 30
-    EQ           shift, and go to state 31
-    MINUS        shift, and go to state 32
-    DIV          shift, and go to state 33
-    MULT         shift, and go to state 34
-    PERC         shift, and go to state 35
-    ADDASS       shift, and go to state 36
+    LESS         shift, and go to state 30
+    GREATER      shift, and go to state 31
+    COLON        shift, and go to state 32
+    EQ           shift, and go to state 33
+    MINUS        shift, and go to state 34
+    DIV          shift, and go to state 35
+    MULT         shift, and go to state 36
+    PERC         shift, and go to state 37
+    ADDASS       shift, and go to state 38
+    ASS          shift, and go to state 39
+    OPEN_BRACK   shift, and go to state 40
+    CLOSE_BRACK  shift, and go to state 41
+    DEC          shift, and go to state 42
+    INC          shift, and go to state 43
 
-    tokenlist  go to state 37
-    token      go to state 38
+    tokenlist  go to state 44
+    token      go to state 45
 
 
 State 1
@@ -356,84 +364,9 @@ State 27
 
 State 28
 
-   38 token: SEMI .
-   39      | SEMI .
+   45 token: SEMI .
 
-    $end         reduce using rule 38 (token)
-    $end         [reduce using rule 39 (token)]
-    ID           reduce using rule 38 (token)
-    ID           [reduce using rule 39 (token)]
-    NUMCONST     reduce using rule 38 (token)
-    NUMCONST     [reduce using rule 39 (token)]
-    CHARCONST    reduce using rule 38 (token)
-    CHARCONST    [reduce using rule 39 (token)]
-    STRINGCONST  reduce using rule 38 (token)
-    STRINGCONST  [reduce using rule 39 (token)]
-    INT          reduce using rule 38 (token)
-    INT          [reduce using rule 39 (token)]
-    BOOL         reduce using rule 38 (token)
-    BOOL         [reduce using rule 39 (token)]
-    CHAR         reduce using rule 38 (token)
-    CHAR         [reduce using rule 39 (token)]
-    IF           reduce using rule 38 (token)
-    IF           [reduce using rule 39 (token)]
-    THEN         reduce using rule 38 (token)
-    THEN         [reduce using rule 39 (token)]
-    ELSE         reduce using rule 38 (token)
-    ELSE         [reduce using rule 39 (token)]
-    WHILE        reduce using rule 38 (token)
-    WHILE        [reduce using rule 39 (token)]
-    DO           reduce using rule 38 (token)
-    DO           [reduce using rule 39 (token)]
-    FOR          reduce using rule 38 (token)
-    FOR          [reduce using rule 39 (token)]
-    TO           reduce using rule 38 (token)
-    TO           [reduce using rule 39 (token)]
-    BY           reduce using rule 38 (token)
-    BY           [reduce using rule 39 (token)]
-    RETURN       reduce using rule 38 (token)
-    RETURN       [reduce using rule 39 (token)]
-    BREAK        reduce using rule 38 (token)
-    BREAK        [reduce using rule 39 (token)]
-    STATIC       reduce using rule 38 (token)
-    STATIC       [reduce using rule 39 (token)]
-    NOT          reduce using rule 38 (token)
-    NOT          [reduce using rule 39 (token)]
-    AND          reduce using rule 38 (token)
-    AND          [reduce using rule 39 (token)]
-    OR           reduce using rule 38 (token)
-    OR           [reduce using rule 39 (token)]
-    TRUE         reduce using rule 38 (token)
-    TRUE         [reduce using rule 39 (token)]
-    FALSE        reduce using rule 38 (token)
-    FALSE        [reduce using rule 39 (token)]
-    OPEN_BRACE   reduce using rule 38 (token)
-    OPEN_BRACE   [reduce using rule 39 (token)]
-    CLOSE_BRACE  reduce using rule 38 (token)
-    CLOSE_BRACE  [reduce using rule 39 (token)]
-    OPEN_PAREN   reduce using rule 38 (token)
-    OPEN_PAREN   [reduce using rule 39 (token)]
-    CLOSE_PAREN  reduce using rule 38 (token)
-    CLOSE_PAREN  [reduce using rule 39 (token)]
-    SEMI         reduce using rule 38 (token)
-    SEMI         [reduce using rule 39 (token)]
-    COMMA        reduce using rule 38 (token)
-    COMMA        [reduce using rule 39 (token)]
-    COLON        reduce using rule 38 (token)
-    COLON        [reduce using rule 39 (token)]
-    EQ           reduce using rule 38 (token)
-    EQ           [reduce using rule 39 (token)]
-    MINUS        reduce using rule 38 (token)
-    MINUS        [reduce using rule 39 (token)]
-    DIV          reduce using rule 38 (token)
-    DIV          [reduce using rule 39 (token)]
-    MULT         reduce using rule 38 (token)
-    MULT         [reduce using rule 39 (token)]
-    PERC         reduce using rule 38 (token)
-    PERC         [reduce using rule 39 (token)]
-    ADDASS       reduce using rule 38 (token)
-    ADDASS       [reduce using rule 39 (token)]
-    $default     reduce using rule 38 (token)
+    $default  reduce using rule 45 (token)
 
 
 State 29
@@ -445,59 +378,108 @@ State 29
 
 State 30
 
+   40 token: LESS .
+
+    $default  reduce using rule 40 (token)
+
+
+State 31
+
+   41 token: GREATER .
+
+    $default  reduce using rule 41 (token)
+
+
+State 32
+
    31 token: COLON .
 
     $default  reduce using rule 31 (token)
 
 
-State 31
+State 33
 
-   32 token: EQ .
+   37 token: EQ .
 
-    $default  reduce using rule 32 (token)
+    $default  reduce using rule 37 (token)
 
 
-State 32
+State 34
 
    33 token: MINUS .
 
     $default  reduce using rule 33 (token)
 
 
-State 33
+State 35
 
    34 token: DIV .
 
     $default  reduce using rule 34 (token)
 
 
-State 34
+State 36
 
    35 token: MULT .
 
     $default  reduce using rule 35 (token)
 
 
-State 35
+State 37
 
    36 token: PERC .
 
     $default  reduce using rule 36 (token)
 
 
-State 36
+State 38
 
-   37 token: ADDASS .
+   42 token: ADDASS .
 
-    $default  reduce using rule 37 (token)
+    $default  reduce using rule 42 (token)
 
 
-State 37
+State 39
+
+   32 token: ASS .
+
+    $default  reduce using rule 32 (token)
+
+
+State 40
+
+   38 token: OPEN_BRACK .
+
+    $default  reduce using rule 38 (token)
+
+
+State 41
+
+   39 token: CLOSE_BRACK .
+
+    $default  reduce using rule 39 (token)
+
+
+State 42
+
+   43 token: DEC .
+
+    $default  reduce using rule 43 (token)
+
+
+State 43
+
+   44 token: INC .
+
+    $default  reduce using rule 44 (token)
+
+
+State 44
 
     0 $accept: tokenlist . $end
     1 tokenlist: tokenlist . token
 
-    $end         shift, and go to state 39
+    $end         shift, and go to state 46
     ID           shift, and go to state 1
     NUMCONST     shift, and go to state 2
     CHARCONST    shift, and go to state 3
@@ -527,32 +509,39 @@ State 37
     CLOSE_PAREN  shift, and go to state 27
     SEMI         shift, and go to state 28
     COMMA        shift, and go to state 29
-    COLON        shift, and go to state 30
-    EQ           shift, and go to state 31
-    MINUS        shift, and go to state 32
-    DIV          shift, and go to state 33
-    MULT         shift, and go to state 34
-    PERC         shift, and go to state 35
-    ADDASS       shift, and go to state 36
+    LESS         shift, and go to state 30
+    GREATER      shift, and go to state 31
+    COLON        shift, and go to state 32
+    EQ           shift, and go to state 33
+    MINUS        shift, and go to state 34
+    DIV          shift, and go to state 35
+    MULT         shift, and go to state 36
+    PERC         shift, and go to state 37
+    ADDASS       shift, and go to state 38
+    ASS          shift, and go to state 39
+    OPEN_BRACK   shift, and go to state 40
+    CLOSE_BRACK  shift, and go to state 41
+    DEC          shift, and go to state 42
+    INC          shift, and go to state 43
 
-    token  go to state 40
+    token  go to state 47
 
 
-State 38
+State 45
 
     2 tokenlist: token .
 
     $default  reduce using rule 2 (tokenlist)
 
 
-State 39
+State 46
 
     0 $accept: tokenlist $end .
 
     $default  accept
 
 
-State 40
+State 47
 
     1 tokenlist: tokenlist token .
 

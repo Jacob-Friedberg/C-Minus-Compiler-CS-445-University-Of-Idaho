@@ -256,13 +256,19 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 \)                        {return setValue(lineNumber,CLOSE_PAREN,yytext);}
 \,                        {return setValue(lineNumber,COMMA,yytext);}
 \:                        {return setValue(lineNumber,COLON,yytext);}
-\=                        {return setValue(lineNumber,EQ,yytext);}
+\=                        {return setValue(lineNumber,ASS,yytext);}
 \-                        {return setValue(lineNumber,MINUS,yytext);}
 \/                        {return setValue(lineNumber,DIV,yytext);}
 \*                        {return setValue(lineNumber,MULT,yytext);}
-\%;                       {return setValue(lineNumber,PERC,yytext);}
-\+\=;                     {return setValue(lineNumber,ADDASS,yytext);}
-\;                        {return setValue(lineNumber,SEMI,yytext);}
+\%                        {return setValue(lineNumber,PERC,yytext);}
+\+\=                      {return setValue(lineNumber,ADDASS,yytext);}
+\=\=                      {return setValue(lineNumber,ASS,yytext);}
+\[                        {return setValue(lineNumber,OPEN_BRACK,yytext);}
+\]                        {return setValue(lineNumber,CLOSE_BRACK,yytext);}
+\>                        {return setValue(lineNumber,GREATER,yytext);}
+\<                        {return setValue(lineNumber,LESS,yytext);}
+\-\-                      {return setValue(lineNumber,DEC,yytext);}
+\+\+                      {return setValue(lineNumber,INC,yytext);}
 \;                        {return setValue(lineNumber,SEMI,yytext);}
 
 

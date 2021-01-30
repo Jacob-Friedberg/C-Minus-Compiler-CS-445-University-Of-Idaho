@@ -44,7 +44,8 @@ static char *toUpperString(char *str)
 %token <tokenData> BY RETURN BREAK STATIC NOT AND OR TRUE FALSE
 %token <tokenData> OPEN_BRACE CLOSE_BRACE OPEN_PAREN CLOSE_PAREN
 %token <tokenData> SEMI COMMA LESS GREATER LESS_EQ GREAT_EQ EQUAL
-%token <tokenData> COLON EQ MINUS DIV MULT PERC ADDASS
+%token <tokenData> COLON EQ MINUS DIV MULT PERC ADDASS ASS
+%token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC 
 
 
 %%
@@ -107,14 +108,21 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
                 | CLOSE_PAREN   {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | COMMA         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | COLON         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}                                                                         
-                | EQ          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | MINUS          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | DIV          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | ASS           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | MINUS         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | DIV           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | MULT          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | PERC          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | ADDASS          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | EQ            {printf("Line %d Token: %s\n",$1->lineNum,"EQ");}
+                | OPEN_BRACK    {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | CLOSE_BRACK   {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | LESS          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | GREATER       {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | ADDASS        {printf("Line %d Token: %s\n",$1->lineNum,"ADDASS");}
+                | DEC           {printf("Line %d Token: %s\n",$1->lineNum,"DEC");}
+                | INC           {printf("Line %d Token: %s\n",$1->lineNum,"INC");}
                 | SEMI          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | SEMI          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                
                 ;
 %%
 extern int yydebug;
