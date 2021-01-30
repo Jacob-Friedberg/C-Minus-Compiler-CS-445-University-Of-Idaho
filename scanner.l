@@ -269,7 +269,7 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 \<                        {return setValue(lineNumber,LESS,yytext);}
 \-\-                      {return setValue(lineNumber,DEC,yytext);}
 \+\+                      {return setValue(lineNumber,INC,yytext);}
-\!                        {return setValue(lineNumber,NEQ,yytext);}
+\!\=                      {return setValue(lineNumber,NEQ,yytext);}
 \+                        {return setValue(lineNumber,PLUS,yytext);}
 \:\<\:                    {return setValue(lineNumber,MIN,yytext);}
 \:\>\:                    {return setValue(lineNumber,MAX,yytext);}
