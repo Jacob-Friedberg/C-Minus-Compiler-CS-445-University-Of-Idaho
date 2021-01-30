@@ -80,21 +80,25 @@ extern int yydebug;
     COMMA = 286,
     LESS = 287,
     GREATER = 288,
-    LESS_EQ = 289,
-    GREAT_EQ = 290,
-    EQUAL = 291,
-    COLON = 292,
-    EQ = 293,
-    MINUS = 294,
-    DIV = 295,
-    MULT = 296,
-    PERC = 297,
-    ADDASS = 298,
-    ASS = 299,
-    OPEN_BRACK = 300,
-    CLOSE_BRACK = 301,
-    DEC = 302,
-    INC = 303
+    LEQ = 289,
+    GEQ = 290,
+    COLON = 291,
+    EQ = 292,
+    MINUS = 293,
+    DIV = 294,
+    MULT = 295,
+    PERC = 296,
+    ADDASS = 297,
+    ASS = 298,
+    OPEN_BRACK = 299,
+    CLOSE_BRACK = 300,
+    DEC = 301,
+    INC = 302,
+    PLUS = 303,
+    NEQ = 304,
+    MIN = 305,
+    MAX = 306,
+    QUESTION = 307
   };
 #endif
 
@@ -106,7 +110,7 @@ union YYSTYPE
 
     TokenData *tokenData;
 
-#line 110 "parser.tab.h"
+#line 114 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

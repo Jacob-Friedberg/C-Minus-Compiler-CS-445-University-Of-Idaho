@@ -262,13 +262,20 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 \*                        {return setValue(lineNumber,MULT,yytext);}
 \%                        {return setValue(lineNumber,PERC,yytext);}
 \+\=                      {return setValue(lineNumber,ADDASS,yytext);}
-\=\=                      {return setValue(lineNumber,ASS,yytext);}
+\=\=                      {return setValue(lineNumber,EQ,yytext);}
 \[                        {return setValue(lineNumber,OPEN_BRACK,yytext);}
 \]                        {return setValue(lineNumber,CLOSE_BRACK,yytext);}
 \>                        {return setValue(lineNumber,GREATER,yytext);}
 \<                        {return setValue(lineNumber,LESS,yytext);}
 \-\-                      {return setValue(lineNumber,DEC,yytext);}
 \+\+                      {return setValue(lineNumber,INC,yytext);}
+\!                        {return setValue(lineNumber,NEQ,yytext);}
+\+                        {return setValue(lineNumber,PLUS,yytext);}
+\:\<\:                    {return setValue(lineNumber,MIN,yytext);}
+\:\>\:                    {return setValue(lineNumber,MAX,yytext);}
+\?                        {return setValue(lineNumber,QUESTION,yytext);}
+\>\=                      {return setValue(lineNumber,GEQ,yytext);}
+\<\=                      {return setValue(lineNumber,LEQ,yytext);}
 \;                        {return setValue(lineNumber,SEMI,yytext);}
 
 

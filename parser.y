@@ -43,9 +43,11 @@ static char *toUpperString(char *str)
 %token <tokenData> INT BOOL CHAR IF THEN ELSE WHILE DO FOR TO 
 %token <tokenData> BY RETURN BREAK STATIC NOT AND OR TRUE FALSE
 %token <tokenData> OPEN_BRACE CLOSE_BRACE OPEN_PAREN CLOSE_PAREN
-%token <tokenData> SEMI COMMA LESS GREATER LESS_EQ GREAT_EQ EQUAL
+%token <tokenData> SEMI COMMA LESS GREATER LEQ GEQ
 %token <tokenData> COLON EQ MINUS DIV MULT PERC ADDASS ASS
-%token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC 
+%token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC PLUS NEQ
+%token <tokenData> MIN MAX QUESTION
+
 
 
 %%
@@ -121,6 +123,13 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
                 | ADDASS        {printf("Line %d Token: %s\n",$1->lineNum,"ADDASS");}
                 | DEC           {printf("Line %d Token: %s\n",$1->lineNum,"DEC");}
                 | INC           {printf("Line %d Token: %s\n",$1->lineNum,"INC");}
+                | NEQ           {printf("Line %d Token: %s\n",$1->lineNum,"NEQ");}
+                | PLUS          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | MIN           {printf("Line %d Token: %s\n",$1->lineNum,"MIN");}
+                | MAX           {printf("Line %d Token: %s\n",$1->lineNum,"MAX");}
+                | QUESTION      {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | GEQ           {printf("Line %d Token: %s\n",$1->lineNum,"GEQ");}
+                | LEQ           {printf("Line %d Token: %s\n",$1->lineNum,"LEQ");}
                 | SEMI          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 
                 ;
