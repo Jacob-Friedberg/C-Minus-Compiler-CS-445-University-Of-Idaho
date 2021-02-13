@@ -24,12 +24,6 @@ all:
 	make
 
 
-
-#$(BIN): $(OBJS)
-	#$(CC) $(CPPFLAGS) $(OBJS) $(LIBS) -o $(BIN)
-#
-#$(OBJS): $(HDRS)
-
 .PHONY : clean
 clean:
 	@echo "cleaning..."
