@@ -7,62 +7,62 @@
 static int lineNumber = 1;
 int numErrors;    // ERR err count
 
-//Convert a string with escape sequences from:inPtr to:outPtr
-static void convertEscapeStr2(char *inPtr, char *outPtr)
-{
-    char c;
+// //Convert a string with escape sequences from:inPtr to:outPtr
+// static void convertEscapeStr2(char *inPtr, char *outPtr)
+// {
+//     char c;
 
-    if(*inPtr != '"')
-    {
-        printf("INTERNAL SCANNING ERROR: A non double quoted string was allowed as a token\n");
-        exit(-1);
-    }
+//     if(*inPtr != '"')
+//     {
+//         printf("INTERNAL SCANNING ERROR: A non double quoted string was allowed as a token\n");
+//         exit(-1);
+//     }
     
-    //Skipping over initial quote
-    inPtr++;
+//     //Skipping over initial quote
+//     inPtr++;
 
-    //while((c = *inPtr++))
-    while(*inPtr != '\0')
-    {   
-        c = *inPtr++;
-        //at the end of a double quoted string
-        if(c == '"')
-        {
-            *outPtr = '\0';
-            return;
-        }
+//     //while((c = *inPtr++))
+//     while(*inPtr != '\0')
+//     {   
+//         c = *inPtr++;
+//         //at the end of a double quoted string
+//         if(c == '"')
+//         {
+//             *outPtr = '\0';
+//             return;
+//         }
 
-        if(c != '\\')
-        {
-            *outPtr++ = c;
-            continue;
-        }
-        //processing escape sequences
-        else
-        {
-            //read the character after the escape character
-            c = *inPtr++;
-            if(c == 'n')
-            {
-                *outPtr++ = '\n';
-            }
-            else if(c == '0')
-            {
-                *outPtr++ = '\0';
-            }
-            else
-            {
-                *outPtr++ = c;
-            }
-        }
-    }
+//         if(c != '\\')
+//         {
+//             *outPtr++ = c;
+//             continue;
+//         }
+//         //processing escape sequences
+//         else
+//         {
+//             //read the character after the escape character
+//             c = *inPtr++;
+//             if(c == 'n')
+//             {
+//                 *outPtr++ = '\n';
+//             }
+//             else if(c == '0')
+//             {
+//                 *outPtr++ = '\0';
+//             }
+//             else
+//             {
+//                 *outPtr++ = c;
+//             }
+//         }
+//     }
 
-    printf("INTERNAL SCANNING ERROR: inPtr string is not closed by a \"\n");
-    exit(-1);
-}
+//     printf("INTERNAL SCANNING ERROR: inPtr string is not closed by a \"\n");
+//     exit(-1);
+// }
 
 
-//Convert a string with escape sequences from:inPtr to:outPtr
+//Convert a string with escape sequences from:inBuff to:outBuff
 static void convertEscapeStr(char *inBuff, char *outBuff)
 {
     if(inBuff[0] != '"')
@@ -110,7 +110,7 @@ static void convertEscapeStr(char *inBuff, char *outBuff)
     exit(-1);
 }
 
-//Convert a string with escape sequences from:inPtr to:outPtr
+//Convert a string with escape sequences from:inBuff to:outBuff
 static void convertEscapeChar(char *inBuff, char *outBuff)
 {
     //printf("INBUFF[%s] of length: %d\n",inBuff,strlen(inBuff));
@@ -217,14 +217,14 @@ whitespace [ \t\r\f]
 numbers [0-9]
 letterDig [a-zA-Z]|[0-9] 
 letters [a-zA-Z]
-charconst2 '[^']*'
-escapedCharConst2 '\\[^']'
+/*charconst2 '[^']*'*/
+/*escapedCharConst2 '\\[^']'*/
 charconst '[^'\n]*'
 escapedCharConst '(\\.|[^\\'\n])*'
 stringConst \"[^\"\n]*\"
 escapedStringConst \"(\\.|[^\\\"\n])*\"
 comment \/\/(.)*
-keyword int|bool|char|if|then|else|while|do|for|to|by|return|break|static|not|and|or|true|false
+/*keyword int|bool|char|if|then|else|while|do|for|to|by|return|break|static|not|and|or|true|false*/
 
 
 %option noyywrap

@@ -1,9 +1,9 @@
 # MakeFile for CS445 Compilers
 # Jacob Friedberg
 # Version 1.0
-SRCS = scanner.l parser.y
-HDRS = scanType.h
-OBJS = lex.yy.o parser.tab.o
+SRCS = scanner.l parser.y ourgetopt.cpp
+HDRS = scanType.h ourgetopt.h
+OBJS = lex.yy.o parser.tab.o ourgetopt.o
 BIN  = c-
 CC   = g++
 CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic
