@@ -45,9 +45,10 @@ static char *toUpperString(char *str)
 %token <tokenData> BY RETURN BREAK STATIC NOT AND OR TRUE FALSE
 %token <tokenData> OPEN_BRACE CLOSE_BRACE OPEN_PAREN CLOSE_PAREN
 %token <tokenData> SEMI COMMA LESS GREATER LEQ GEQ
-%token <tokenData> COLON EQ MINUS DIV MULT PERC ADDASS ASS
+%token <tokenData> COLON EQ MINUS DIV MULT MOD ADDASS ASS
 %token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC PLUS NEQ
-%token <tokenData> MIN MAX QUESTION
+%token <tokenData> MIN MAX QUESTION SUBASS MULASS DIVASS
+
 
 /*types are our nonTerminals. */
 /*each new line of non terminals represents a new section in the grammar spec */
@@ -67,7 +68,7 @@ static char *toUpperString(char *str)
 
 
 %%
-
+/*------------------------1-3-------------------------------*/
 program         : declList
                 ;
 
@@ -78,8 +79,198 @@ declList        : declList decl
 decl            : varDecl
                 | funDecl 
                 ;  
-/*------------------------------------*/
-varDecl         : 
+/*------------------------4-9-------------------------------*/
+varDecl         : typeSpec varDeclList SEMI
+                ;
+                
+scopedVarDecl   : STATIC typeSpec varDeclList SEMI
+                | typeSpec varDeclList SEMI
+                ;
+
+varDeclList     : varDeclList COMMA varDeclInit
+                | varDeclInit 
+                ;
+
+varDeclInit     : varDeclId
+                | varDeclId COLON simpleExp
+                ;
+
+varDeclId       : ID
+                | ID OPEN_BRACK NUMCONST CLOSE_BRACK
+                ;
+
+typeSpec        : INT
+                | BOOL
+                | CHAR
+                ;
+/*------------------------10-15-------------------------------*/
+
+funDecl         : typeSpec ID OPEN_PAREN params CLOSE_PAREN stmt
+                | ID OPEN_PAREN params CLOSE_PAREN stmt
+                ;
+
+params          : paramList
+                | /*EMPTY*/
+                ;
+
+paramList       : paramList SEMI paramTypeList
+                | paramTypeList
+                ;
+
+paramTypeList   : typeSpec paramIdList
+                ;
+
+paramIdList     : paramIdList COMMA paramId 
+                | paramId
+                ;
+
+paramId         : ID
+                | ID OPEN_BRACK CLOSE_BRACK
+                ;
+/*------------------------16-25-------------------------------*/
+stmt            : expStmt
+                | compoundStmt
+                | selectStmt
+                | iterStmt
+                | returnStmt
+                | breakStmt
+                ;
+
+expStmt         : exp SEMI
+                | SEMI
+                ;
+
+compoundStmt    : OPEN_BRACE localDecls stmtList CLOSE_BRACE
+                ;
+
+localDecls      : localDecls scopedVarDecl
+                | /*EMPTY*/
+                ;
+
+stmtList        : stmtList stmt
+                | /*EMPTY*/
+                ;
+
+selectStmt      : IF simpleExp THEN stmt
+                | IF simpleExp THEN stmt ELSE stmt
+                ;
+
+iterStmt        : WHILE simpleExp DO stmt
+                | FOR ID ASS iterRange DO stmt
+                ;
+
+iterRange       : simpleExp TO simpleExp
+                | simpleExp TO simpleExp BY simpleExp
+                ;
+
+returnStmt      : RETURN SEMI
+                | RETURN exp SEMI
+                ;
+
+breakStmt       : BREAK SEMI
+                ;
+
+/*------------------------26-46-------------------------------*/
+exp             : mutable ASS exp
+                | mutable ADDASS exp
+                | mutable SUBASS exp
+                | mutable MULASS exp
+                | mutable DIVASS exp
+                | mutable INC
+                | mutable DEC
+                | simpleExp
+                ;
+
+simpleExp       : simpleExp OR andExp
+                | andExp
+                ;
+
+andExp          : andExp AND unaryRelExp
+                | unaryRelExp
+                ;
+                
+unaryRelExp     : NOT unaryRelExp
+                | relExp
+                ;
+
+relExp          : minMaxExp relOp minMaxExp 
+                | minMaxExp
+                ;
+
+relOp           : LEQ
+                | LESS
+                | GREATER
+                | GEQ
+                | EQ
+                | NEQ
+                ;
+
+minMaxExp       : minMaxExp minMaxOp sumExp
+                | sumExp
+                ;
+
+minMaxOp        : MAX
+                | MIN
+                ;
+
+sumExp          : sumExp sumOp mulExp
+                | mulExp
+                ;
+
+sumOp           : PLUS
+                | MINUS
+                ;
+
+mulExp          : mulExp mulOp unaryExp
+                | unaryExp
+                ;
+
+mulOp           : MULT
+                | DIV
+                | MOD
+                ;
+
+unaryExp        : unaryOp unaryExp
+                | factor
+                ;
+
+unaryOp         : MINUS
+                | MULT
+                | QUESTION
+                ;
+
+factor          : immutable
+                | mutable
+                ;
+
+mutable         : ID
+                | ID OPEN_BRACK exp CLOSE_BRACK
+                ;
+
+immutable       : OPEN_PAREN exp CLOSE_PAREN
+                | call
+                | constant
+                ;
+
+call            : ID OPEN_PAREN args CLOSE_PAREN
+                ;
+
+args            : argList
+                | /*EMPTY*/
+                ;
+
+argList         : argList COMMA exp
+                | exp
+                ;
+
+constant        : NUMCONST
+                | CHARCONST
+                | STRINGCONST
+                | TRUE
+                | FALSE
+                ;
+
+/*------------------------END OF GRAMMAR-------------------------------*/
 
 tokenlist       : tokenlist token
                 | token 
@@ -144,13 +335,16 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
                 | MINUS         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | DIV           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | MULT          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | PERC          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
+                | MOD           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | EQ            {printf("Line %d Token: %s\n",$1->lineNum,"EQ");}
                 | OPEN_BRACK    {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | CLOSE_BRACK   {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | LESS          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | GREATER       {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 | ADDASS        {printf("Line %d Token: %s\n",$1->lineNum,"ADDASS");}
+                | SUBASS        {printf("Line %d Token: %s\n",$1->lineNum,"SUBASS");}
+                | MULASS        {printf("Line %d Token: %s\n",$1->lineNum,"MULASS");}
+                | DIVASS        {printf("Line %d Token: %s\n",$1->lineNum,"DIVASS");}
                 | DEC           {printf("Line %d Token: %s\n",$1->lineNum,"DEC");}
                 | INC           {printf("Line %d Token: %s\n",$1->lineNum,"INC");}
                 | NEQ           {printf("Line %d Token: %s\n",$1->lineNum,"NEQ");}
@@ -192,7 +386,7 @@ int main(int argc, char *argv[])
 
         if(optind < argc)
         {
-            printf("file found as %s\n",argv[optind]);
+            printf("file found as %s\nTesting grammar. Nothing is good\n",argv[optind]);
 
             if ((yyin = fopen(argv[optind], "r"))) {
             // file open successful

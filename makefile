@@ -14,7 +14,7 @@ $(BIN): $(OBJS)
 	$(CC) $(CCFLAGS) $(OBJS) $(LIBS) -o $(BIN)
 	
 parser.tab.h parser.tab.c: parser.y
-	bison -v -t -d parser.y   # -d supplies defines file, -v supplies output
+	bison -Wcounterexamples -v  -t -d parser.y   # -d supplies defines file, -v supplies output
 
 lex.yy.c: scanner.l parser.tab.h
 	$(LEX) scanner.l  # -d debug

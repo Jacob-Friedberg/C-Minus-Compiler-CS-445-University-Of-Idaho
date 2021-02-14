@@ -260,8 +260,11 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 \-                        {return setValue(lineNumber,MINUS,yytext);}
 \/                        {return setValue(lineNumber,DIV,yytext);}
 \*                        {return setValue(lineNumber,MULT,yytext);}
-\%                        {return setValue(lineNumber,PERC,yytext);}
+\%                        {return setValue(lineNumber,MOD,yytext);}
 \+\=                      {return setValue(lineNumber,ADDASS,yytext);}
+\-\=                      {return setValue(lineNumber,SUBASS,yytext);}
+\*\=                      {return setValue(lineNumber,MULASS,yytext);}
+\/\=                      {return setValue(lineNumber,DIVASS,yytext);}
 \=\=                      {return setValue(lineNumber,EQ,yytext);}
 \[                        {return setValue(lineNumber,OPEN_BRACK,yytext);}
 \]                        {return setValue(lineNumber,CLOSE_BRACK,yytext);}
