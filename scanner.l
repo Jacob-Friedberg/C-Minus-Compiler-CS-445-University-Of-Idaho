@@ -289,8 +289,6 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 {escapedCharConst}        {return setValue(lineNumber,CHARCONST,yytext);}
 {numbers}+                {return setValue(lineNumber,NUMCONST,yytext);}
 {letters}|{letterDig}*    {return setValue(lineNumber,ID,yytext);}
-{}
-
 .                         {printf("ERROR(%d): Invalid or misplaced input character: '%c'. Character Ignored.\n",lineNumber,yytext[0]);}
 
 %%

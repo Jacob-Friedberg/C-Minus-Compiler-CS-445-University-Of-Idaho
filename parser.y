@@ -5,6 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "scanType.h"
+#include "ourgetopt.h"
 
 
 extern int yylex();
@@ -25,8 +26,6 @@ static char *toUpperString(char *str)
         str[i]=toupper(str[i]);
         i++;
     }
-
-
     return str;
 }
 
@@ -37,8 +36,10 @@ static char *toUpperString(char *str)
 // so scanType.h must be included before the tab.h file!!!!
 %union {
     TokenData *tokenData;
+    void *treenode;
 }
 
+/*tokens are terminals*/ 
 %token <tokenData> ID NUMCONST CHARCONST STRINGCONST 
 %token <tokenData> INT BOOL CHAR IF THEN ELSE WHILE DO FOR TO 
 %token <tokenData> BY RETURN BREAK STATIC NOT AND OR TRUE FALSE
@@ -48,6 +49,8 @@ static char *toUpperString(char *str)
 %token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC PLUS NEQ
 %token <tokenData> MIN MAX QUESTION
 
+/*types are our nonTerminals. */
+%type <treenode> 
 
 
 %%
@@ -137,14 +140,47 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
 extern int yydebug;
 int main(int argc, char *argv[])
 {
-    if (argc > 1) {
-        if ((yyin = fopen(argv[1], "r"))) {
-            // file open successful
+    char c;
+    bool printflag = false;
+    bool errorflag = false;
+    extern int optind;
+    while(1)
+    {
+        //Picking off the options we want. p
+        while((c = ourGetopt(argc,argv,(char*)"pd")) != -1)
+        {
+            switch(c)
+            {
+                case 'd':
+                    errorflag = true;
+                    break;
+                case 'p':
+                    printflag = true;
+                    break;
+                default:
+                    fprintf(stderr,"Usage: -p(print tree) -d(yydebug enable) are the only supported options\n./c- -[p|d] -[d|p] [FILENAME]\n");
+                    exit(-1);
+            }
         }
-        else {
-            // failed to open file
-            printf("ERROR: failed to open \'%s\'\n", argv[1]);
-            exit(1);
+
+        if(optind < argc)
+        {
+            printf("file found as %s\n",argv[optind]);
+
+            if ((yyin = fopen(argv[optind], "r"))) {
+            // file open successful
+            }
+            else {
+                // failed to open file
+                printf("ERROR: failed to open \'%s\'\n", argv[optind]);
+                exit(1);
+            }
+            optind++;
+        }
+        //no more arguments   
+        else
+        {
+            break;
         }
     }
 
