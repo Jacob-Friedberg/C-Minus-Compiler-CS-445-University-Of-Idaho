@@ -39,7 +39,7 @@ static char *toUpperString(char *str)
     void *treenode;
 }
 
-/*tokens are terminals*/ 
+/*tokens are our terminals*/ 
 %token <tokenData> ID NUMCONST CHARCONST STRINGCONST 
 %token <tokenData> INT BOOL CHAR IF THEN ELSE WHILE DO FOR TO 
 %token <tokenData> BY RETURN BREAK STATIC NOT AND OR TRUE FALSE
@@ -50,10 +50,37 @@ static char *toUpperString(char *str)
 %token <tokenData> MIN MAX QUESTION
 
 /*types are our nonTerminals. */
-%type <treenode> 
+/*each new line of non terminals represents a new section in the grammar spec */
+%type <treenode> program declList decl 
+
+%type <treenode> varDecl scopedVarDecl varDeclList varDeclInit varDeclId typeSpec
+
+%type <treenode> funDecl params paramList paramTypeList paramIdList paramId
+
+%type <treenode> stmt expStmt compoundStmt localDecls stmtList selectStmt iterStmt 
+%type <treenode> iterRange returnStmt breakStmt
+
+%type <treenode> exp simpleExp andExp unaryRelExp relExp relOp minMaxExp minMaxOp 
+%type <treenode> sumExp sumOp mulExp mulOp unaryExp unaryOp factor mutable immutable 
+%type <treenode> call args argList constant
+
 
 
 %%
+
+program         : declList
+                ;
+
+declList        : declList decl
+                | decl
+                ;
+
+decl            : varDecl
+                | funDecl 
+                ;  
+/*------------------------------------*/
+varDecl         : 
+
 tokenlist       : tokenlist token
                 | token 
                 ;
