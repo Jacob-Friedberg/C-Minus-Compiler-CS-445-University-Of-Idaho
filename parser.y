@@ -32,6 +32,10 @@ static char *toUpperString(char *str)
 
 %}
 
+%define parse.lac full
+%define parse.error detailed
+
+
 // this is included in the tab.h file
 // so scanType.h must be included before the tab.h file!!!!
 %union {
@@ -58,16 +62,20 @@ static char *toUpperString(char *str)
 
 %type <treenode> funDecl params paramList paramTypeList paramIdList paramId
 
-%type <treenode> stmt expStmt compoundStmt localDecls stmtList selectStmt iterStmt 
+%type <treenode> stmt expStmt compoundStmt localDecls stmtList
 %type <treenode> iterRange returnStmt breakStmt
 
 %type <treenode> exp simpleExp andExp unaryRelExp relExp relOp minMaxExp minMaxOp 
 %type <treenode> sumExp sumOp mulExp mulOp unaryExp unaryOp factor mutable immutable 
-%type <treenode> call args argList constant
+%type <treenode> call args argList constant matched unmatched 
+%type <treenode> unmatchedSelectStmt matchedSelectStmt matchedIterStmt unmatchedIterStmt 
+
+
 
 
 
 %%
+/*------------------------START OF GRAMMER-------------------------------*/
 /*------------------------1-3-------------------------------*/
 program         : declList
                 ;
@@ -128,6 +136,7 @@ paramId         : ID
                 | ID OPEN_BRACK CLOSE_BRACK
                 ;
 /*------------------------16-25-------------------------------*/
+/*
 stmt            : expStmt
                 | compoundStmt
                 | selectStmt
@@ -135,6 +144,24 @@ stmt            : expStmt
                 | returnStmt
                 | breakStmt
                 ;
+*/
+
+stmt            : matched
+                | unmatched
+                ;
+
+matched         : expStmt
+                | compoundStmt
+                | matchedSelectStmt
+                | matchedIterStmt
+                | returnStmt
+                | breakStmt
+                ;
+
+unmatched       : unmatchedSelectStmt
+                | unmatchedIterStmt
+                ;
+
 
 expStmt         : exp SEMI
                 | SEMI
@@ -150,15 +177,32 @@ localDecls      : localDecls scopedVarDecl
 stmtList        : stmtList stmt
                 | /*EMPTY*/
                 ;
-
+/*
 selectStmt      : IF simpleExp THEN stmt
                 | IF simpleExp THEN stmt ELSE stmt
                 ;
+*/
 
+matchedSelectStmt   : IF simpleExp THEN matched ELSE matched
+                    ;
+
+unmatchedSelectStmt : IF simpleExp THEN matched ELSE unmatched
+                    | IF simpleExp THEN stmt
+                    ;
+
+unmatchedIterStmt   : WHILE simpleExp DO unmatched
+                    | FOR ID ASS iterRange DO unmatched
+                    ;
+
+matchedIterStmt     : WHILE simpleExp DO matched
+                    | FOR ID ASS iterRange DO matched
+                    ;      
+
+/*
 iterStmt        : WHILE simpleExp DO stmt
                 | FOR ID ASS iterRange DO stmt
                 ;
-
+*/
 iterRange       : simpleExp TO simpleExp
                 | simpleExp TO simpleExp BY simpleExp
                 ;
@@ -270,8 +314,9 @@ constant        : NUMCONST
                 | FALSE
                 ;
 
-/*------------------------END OF GRAMMAR-------------------------------*/
+/*------------------------END OF GRAMMER--------------------------------*/
 
+/* OLD TOKEN TESTING CODE
 tokenlist       : tokenlist token
                 | token 
                 ;
@@ -357,6 +402,7 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
                 | SEMI          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
                 
                 ;
+*/
 %%
 extern int yydebug;
 int main(int argc, char *argv[])

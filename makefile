@@ -8,13 +8,15 @@ BIN  = c-
 CC   = g++
 CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic
 LEX = flex
-LEXFLAGS = 
+#-Wcounterexamples
+BISONFLAGS = -v -Wcounterexamples -t -d
+TARNAME = pas02.tar
 
 $(BIN): $(OBJS)
 	$(CC) $(CCFLAGS) $(OBJS) $(LIBS) -o $(BIN)
 	
 parser.tab.h parser.tab.c: parser.y
-	bison -Wcounterexamples -v  -t -d parser.y   # -d supplies defines file, -v supplies output
+	bison $(BISONFLAGS) parser.y   # -d supplies defines file, -v supplies output
 
 lex.yy.c: scanner.l parser.tab.h
 	$(LEX) scanner.l  # -d debug
@@ -28,9 +30,9 @@ all:
 clean:
 	@echo "cleaning..."
 	rm -f $(BIN) $(OBJS) lex.yy.c parser.tab.c parser.tab.h parser.output *~
-	rm -rf pas01.tar
+	rm -rf $(TARNAME)
 .PHONY : tar
 tar:
 	@echo "Taring in progress..."
-	tar -cvf pas01.tar $(SRCS) $(HDRS) makefile 
-	ls -l pas01.tar
+	tar -cvf $(TARNAME) $(SRCS) $(HDRS) makefile 
+	ls -l $(TARNAME)
