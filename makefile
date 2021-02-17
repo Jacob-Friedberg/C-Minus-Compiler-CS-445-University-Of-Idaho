@@ -1,15 +1,15 @@
 # MakeFile for CS445 Compilers
 # Jacob Friedberg
 # Version 1.0
-SRCS = scanner.l parser.y ourgetopt.cpp
-HDRS = scanType.h ourgetopt.h
-OBJS = lex.yy.o parser.tab.o ourgetopt.o
+SRCS = scanner.l parser.y ourgetopt.cpp Tree.cpp
+HDRS = scanType.h ourgetopt.h Tree.h
+OBJS = lex.yy.o parser.tab.o ourgetopt.o Tree.o
 BIN  = c-
 CC   = g++
-CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic
+CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic -g
 LEX = flex
 #-Wcounterexamples
-BISONFLAGS = -v -Wcounterexamples -t -d
+BISONFLAGS = -v  -t -d
 TARNAME = pas02.tar
 
 $(BIN): $(OBJS)

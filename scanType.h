@@ -1,5 +1,6 @@
 #ifndef SCANTYPE_H
 #define SCANTYPE_H
+
 struct TokenData {
     int  tokenClass;        // token class
     int  lineNum;           // line where found

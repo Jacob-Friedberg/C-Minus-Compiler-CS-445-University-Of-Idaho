@@ -1,6 +1,7 @@
 %{
 // this *order* of these includes is mandatory
 #include "scanType.h"  // TokenData Type
+#include "Tree.h"
 #include "parser.tab.h"  // token definitions from the bison
 #include <ctype.h>
 
@@ -257,7 +258,7 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 \,                        {return setValue(lineNumber,COMMA,yytext);}
 \:                        {return setValue(lineNumber,COLON,yytext);}
 \=                        {return setValue(lineNumber,ASS,yytext);}
-\-                        {return setValue(lineNumber,MINUS,yytext);}
+\-                        {return setValue(lineNumber,CHSIGN,yytext);}
 \/                        {return setValue(lineNumber,DIV,yytext);}
 \*                        {return setValue(lineNumber,MULT,yytext);}
 \%                        {return setValue(lineNumber,MOD,yytext);}
