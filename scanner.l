@@ -258,7 +258,7 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 \,                        {return setValue(lineNumber,COMMA,yytext);}
 \:                        {return setValue(lineNumber,COLON,yytext);}
 \=                        {return setValue(lineNumber,ASS,yytext);}
-\-                        {return setValue(lineNumber,CHSIGN,yytext);}
+\-                        {return setValue(lineNumber,MINUS,yytext);}
 \/                        {return setValue(lineNumber,DIV,yytext);}
 \*                        {return setValue(lineNumber,MULT,yytext);}
 \%                        {return setValue(lineNumber,MOD,yytext);}

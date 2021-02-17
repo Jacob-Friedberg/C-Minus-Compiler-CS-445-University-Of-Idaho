@@ -100,25 +100,25 @@ void printTree(TreeNode *node, int indentLevel)
                 printf("NULL\n");
                 break;
             case IfK:
-                printf("If [line: %d]\n",node->lineno);
+                printf("If [line: %d]\n", node->lineno);
                 break;
             case WhileK:
-                printf("While\n");
+                printf("While [line: %d]\n", node->lineno);
                 break;
             case ForK:
-                printf("For [line: %d]\n",node->lineno);
+                printf("For [line: %d]\n", node->lineno);
                 break;
             case CompoundK:
-                printf("Compound [line: %d]\n",node->lineno);
+                printf("Compound [line: %d]\n", node->lineno);
                 break;
             case ReturnK:
-                printf("Return [line: %d]\n",node->lineno);
+                printf("Return [line: %d]\n", node->lineno);
                 break;
             case BreakK:
-                printf("Break [line: %d]\n",node->lineno);
+                printf("Break [line: %d]\n", node->lineno);
                 break;
             case RangeK:
-                printf("Range [line: %d]\n",node->lineno);
+                printf("Range [line: %d]\n", node->lineno);
                 break;
 
             default:
@@ -131,27 +131,36 @@ void printTree(TreeNode *node, int indentLevel)
             switch (node->subkind.exp)
             {
             case OpK:
-                printf("Op: %s [line: %d]\n",node->attr.string,node->lineno);
+                printf("Op: %s [line: %d]\n", node->attr.string, node->lineno);
                 break;
             case ConstantK:
-                if(strcmp(typing,"char") == 0)
+                if (strcmp(typing, "char") == 0)
                 {
-                printf("Const of type %s: %c [line: %d]\n",typing,node->attr.value,node->lineno);     
+                    if (node->isArray)
+                    {
+                        printf("Const is array of type %s: \"%s\" [line: %d]\n", typing, node->attr.string, node->lineno);
+                    }
+                    else
+                        printf("Const of type %s: '%c' [line: %d]\n", typing, node->attr.value, node->lineno);
+                }
+                else if (strcmp(typing, "bool") == 0)
+                {
+                    printf("Const of type %s: %s [line: %d]\n", typing, node->attr.value ? "true" : "false", node->lineno);
                 }
                 else
-                    printf("Const of type %s: %d [line: %d]\n",typing,node->attr.value,node->lineno);
+                    printf("Const of type %s: %d [line: %d]\n", typing, node->attr.value, node->lineno);
                 break;
             case IdK:
                 printf("Id: %s [line: %d]\n", node->attr.name, node->lineno);
                 break;
             case AssignK:
-                printf("Assign: %s [line: %d]\n",node->attr.string,node->lineno);
+                printf("Assign: %s [line: %d]\n", node->attr.string, node->lineno);
                 break;
             case InitK:
                 printf("Init:\n");
                 break;
             case CallK:
-                printf("Call: %s [line: %d]\n",node->attr.name,node->lineno);
+                printf("Call: %s [line: %d]\n", node->attr.name, node->lineno);
                 break;
             default:
                 printf("Unknown ExpK Subkind\n");
@@ -167,7 +176,11 @@ void printTree(TreeNode *node, int indentLevel)
                 {
                     printf("internal error NULL REACHED in attrName Vark\n");
                 }
-                printf("Var: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+
+                if (node->isArray)
+                    printf("Var: %s is array of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                else
+                    printf("Var: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
                 break;
             case FuncK:
                 if (node->attr.name == NULL)
@@ -180,10 +193,10 @@ void printTree(TreeNode *node, int indentLevel)
             case ParamK:
                 if (node->attr.name == NULL)
                 {
-                    printf("internal error NULL REACHED in attrName funck\n");
+                    printf("internal error NULL REACHED in attrName Paramk\n");
                     break;
                 }
-                
+
                 //printf("Parm: %s%s of type %s [line: %d]\n", node->attr.name,node->isArray?" is array":"", typing, node->lineno);
 
                 if (node->isArray)

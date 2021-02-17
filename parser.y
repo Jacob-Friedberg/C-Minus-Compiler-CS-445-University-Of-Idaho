@@ -21,24 +21,25 @@ void yyerror(const char *msg)
     printf("ERROR: %s\n", msg);
 }
 
-// static char *toUpperString(char *str)
-// {
-//     int i = 0;
-//     while(str[i])
-//     {
-//         str[i]=toupper(str[i]);
-//         i++;
-//     }
-//     return str;
-// }
+static char *toUpperString(char *str)
+{
+    int i = 0;
+    while(str[i])
+    {
+        str[i]=toupper(str[i]);
+        i++;
+    }
+    return str;
+}
 
 TreeNode *syntaxTree;
 
 
 %}
+/*
 %define parse.lac full
 %define parse.error detailed
-
+*/
 // this is included in the tab.h file
 // so scanType.h must be included before the tab.h file!!!!
 %union {
@@ -56,7 +57,7 @@ TreeNode *syntaxTree;
 %token <tokenData> COLON EQ DIV MULT MOD ADDASS ASS
 %token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC PLUS NEQ
 %token <tokenData> MIN MAX QUESTION SUBASS MULASS DIVASS
-%token <tokenData> CHSIGN
+%token <tokenData> MINUS
 
 
 /*types are our nonTerminals. */
@@ -75,7 +76,7 @@ TreeNode *syntaxTree;
 %type <treenode> call args argList constant matched unmatched 
 %type <treenode> unmatchedSelectStmt matchedSelectStmt matchedIterStmt unmatchedIterStmt 
 
-%type <tokenData> unaryOp relOp sumOp mulOp minMaxOp
+%type <tokenData> unaryOp relOp sumOp mulOp minMaxOp 
 
 %type <expType> typeSpec
 
@@ -100,9 +101,7 @@ varDecl         : typeSpec varDeclList SEMI { setType($2,$1,false); $$ = $2;}
                 ;
                 /*FIX STATIC LATER*/
 scopedVarDecl   : STATIC typeSpec varDeclList SEMI  { setType($3,$2,true);
-                                                      $$ = newDeclNode(VarK,$2,$1,$3); 
-                                                      $$->attr.string = $1->tokenStr;
-                                                      $$->attrSet = true;
+                                                    $$=$3;
                                                     }
                 | typeSpec varDeclList SEMI {   setType($2,$1,false);
                                                 $$ = $2;
@@ -116,9 +115,8 @@ varDeclList     : varDeclList COMMA varDeclInit   { $$ = addSibling($1,$3); }
                 ;
 
 varDeclInit     : varDeclId {$$ = $1;}
-                | varDeclId COLON simpleExp     {
-
-                                                $$ = $1->child[0] = $3;}
+                | varDeclId COLON simpleExp     {$$ = $1;
+                                                 $$->child[0] = $3;}
                 ;
 
 varDeclId       : ID                                    {$$ = newDeclNode(VarK,UndefinedType,$1);
@@ -145,7 +143,6 @@ funDecl         : typeSpec ID OPEN_PAREN params CLOSE_PAREN stmt    {$$ = newDec
                                                                      
                                                                     }
                 | ID OPEN_PAREN params CLOSE_PAREN stmt             {$$ = newDeclNode(FuncK,Void,$1,$3,$5);
-                                                                    printf("im parsing funcdecl\n");
                                                                     $$->attr.name = $1->tokenStr;
                                                                     $$->attrSet = true;                                                                     
                                                                     }
@@ -339,21 +336,21 @@ exp             : mutable ASS exp                               { $$ = newExpNod
                 ;
 
 simpleExp       : simpleExp OR andExp                           { $$ = newExpNode(OpK,$2,$1,$3);
-                                                                  $$->attr.string = $2->tokenStr;
+                                                                  $$->attr.string = toUpperString($2->tokenStr);
                                                                   $$->attrSet = true;
                                                                 }
                 | andExp   {$$ = $1;}
                 ;
 
 andExp          : andExp AND unaryRelExp                        { $$ = newExpNode(OpK,$2,$1,$3);
-                                                                  $$->attr.string = $2->tokenStr;
+                                                                  $$->attr.string = toUpperString($2->tokenStr);
                                                                   $$->attrSet = true;
                                                                 }
                 | unaryRelExp   {$$ = $1;}
                 ;
                 
 unaryRelExp     : NOT unaryRelExp                               { $$ = newExpNode(OpK,$1,$2);
-                                                                  $$->attr.string = $1->tokenStr;
+                                                                  $$->attr.string = toUpperString($1->tokenStr);
                                                                   $$->attrSet = true;
                                                                 }
                 | relExp {$$ = $1;}
@@ -393,7 +390,7 @@ sumExp          : sumExp sumOp mulExp                            {$$ = newExpNod
                 ;
 
 sumOp           : PLUS {$$ = $1;}
-                | CHSIGN {$$ = $1;}
+                | MINUS {$$ = $1;}
                 ;
 
 mulExp          : mulExp mulOp unaryExp                         { $$ = newExpNode(OpK,$2,$1,$3);
@@ -415,8 +412,8 @@ unaryExp        : unaryOp unaryExp                              { $$ = newExpNod
                 | factor {$$ = $1;}
                 ;
 
-unaryOp         : CHSIGN {$$ = $1;}
-                | MULT  {$$ = $1;}
+unaryOp         : MINUS {$$ = $1; strcpy($$->tokenStr,"CHSIGN");}
+                | MULT  {$$ = $1; strcpy($$->tokenStr,"SIZEOF");}
                 | QUESTION {$$ = $1;}
                 ;
 
@@ -433,8 +430,9 @@ mutable         : ID                                            { $$ = newExpNod
                                                                   node->attr.name = $1->tokenStr;
                                                                   node->attrSet = true;
                                                                   $$ = newExpNode(OpK,$2,node,$3);
-                                                                  $$->attr.name = $1->tokenStr;
+                                                                  $$->attr.name = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  $$->isArray = true;
                                                                 }
                 ;
 
@@ -470,7 +468,8 @@ constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
                 | STRINGCONST   { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.string = $1->sValue; /*Shallow Cop*/
                                   $$->attrSet = true;
-                                  $$->expType = Char; 
+                                  $$->expType = Char;
+                                  $$->isArray = true; 
                                 }
                 | TRUE          { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
@@ -602,7 +601,7 @@ int main(int argc, char *argv[])
 
         if(optind < argc)
         {
-            printf("file found as %s\nTesting grammar. Nothing is good\n",argv[optind]);
+            //printf("file found as %s\nTesting grammar. Nothing is good\n",argv[optind]);
 
             if ((yyin = fopen(argv[optind], "r"))) {
             // file open successful
@@ -620,9 +619,13 @@ int main(int argc, char *argv[])
             break;
         }
     }
+    if(errorflag)
+        yydebug = 1;
 
     // do the parsing
     yyparse();
-    printTree(syntaxTree,0);
+
+    if(printflag)
+        printTree(syntaxTree,0);
     return 0;
 }
