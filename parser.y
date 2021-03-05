@@ -57,7 +57,7 @@ TreeNode *syntaxTree;
 %token <tokenData> COLON EQ DIV MULT MOD ADDASS ASS
 %token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC PLUS NEQ
 %token <tokenData> MIN MAX QUESTION SUBASS MULASS DIVASS
-%token <tokenData> MINUS
+%token <tokenData> MINUS CHSIGN SIZEOF
 
 
 /*types are our nonTerminals. */
@@ -412,8 +412,8 @@ unaryExp        : unaryOp unaryExp                              { $$ = newExpNod
                 | factor {$$ = $1;}
                 ;
 
-unaryOp         : MINUS {$$ = $1; strcpy($$->tokenStr,"CHSIGN");}
-                | MULT  {$$ = $1; strcpy($$->tokenStr,"SIZEOF");}
+unaryOp         : MINUS {$$ = $1; $$->tokenClass = CHSIGN;}
+                | MULT  {$$ = $1; $$->tokenClass = SIZEOF;}
                 | QUESTION {$$ = $1;}
                 ;
 

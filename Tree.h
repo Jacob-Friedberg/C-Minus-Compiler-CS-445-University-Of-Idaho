@@ -1,7 +1,6 @@
 #ifndef _TREE_H
 #define _TREE_H
 #include "scanType.h"
-
 #include <cstddef>
 // the exact type of the token or node involved.  These are divided into
 // various "kinds" in the enums that follow
@@ -95,13 +94,14 @@ typedef struct treeNode
     //done in bison
     union // relevant data to type -> attr
     {
-        OpKind op;            // type of token (same as in bison)
+        /*OpKind op;*/          // type of token (same as in bison)
         int value;            // used when an integer constant or boolean
         unsigned char cvalue; // used when a character
         char *string;         // used when a string constant
         char *name;           // used when IdK
     } attr;
-
+    OpKind op;
+    bool isOp;
     //Has the attribute been set?
     bool attrSet;
     ExpType expType; // used when ExpK for type checking

@@ -1,4 +1,5 @@
 #include "Tree.h"
+#include "parser.tab.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,6 +60,7 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
     treeNode->sibling = NULL;
 
     treeNode->lineno = token->lineNum;
+ 
 
     treeNode->nodekind = ExpK;
 
@@ -67,6 +69,14 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
     treeNode->expType = UndefinedType;
 
     treeNode->attrSet = false;
+
+    treeNode->isOp = false;
+
+    if(kind == OpK)
+    {
+        treeNode->op = token->tokenClass;
+        treeNode->isOp = true;
+    }
 
     return treeNode;
 }
@@ -131,7 +141,16 @@ void printTree(TreeNode *node, int indentLevel)
             switch (node->subkind.exp)
             {
             case OpK:
-                printf("Op: %s [line: %d]\n", node->attr.string, node->lineno);
+                if(node->isOp && node->op == CHSIGN)
+                {
+                    printf("Op: CHSIGN [line: %d]\n", node->lineno);
+                }
+                else if(node->isOp && node->op == SIZEOF)
+                {
+                    printf("Op: SIZEOF [line: %d]\n", node->lineno);
+                }
+                else
+                    printf("Op: %s [line: %d]\n", node->attr.string, node->lineno);
                 break;
             case ConstantK:
                 if (strcmp(typing, "char") == 0)
@@ -234,27 +253,6 @@ void printTree(TreeNode *node, int indentLevel)
         else
             node = node->sibling;
     }
-}
-
-void dumpNode(TreeNode *node)
-{
-    printf("---Node Information---\n");
-    for (size_t i = 0; i < MAXCHILDREN; i++)
-    {
-        if (node->child[i] != NULL)
-        {
-
-            printf("Child[%ld]: Exists\n", i);
-        }
-    }
-
-    printf("Linenumber is:%d\n", node->lineno);
-
-    printf("NodeKind is: %d\n", node->nodekind);
-
-    printf("the subkind is: %d\n", node->subkind.decl);
-
-    printf("the EXP type is: %d\n", node->expType);
 }
 
 // add a TreeNode to a list of siblings.
