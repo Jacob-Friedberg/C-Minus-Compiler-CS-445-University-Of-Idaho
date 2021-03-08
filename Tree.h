@@ -11,6 +11,13 @@ typedef int OpKind;
 
 // Kinds of Statements
 //typedef enum {DeclK, StmtK, ExpK} NodeKind;
+enum UnionType
+{
+    cvalue,
+    value,
+    string
+};
+
 enum NodeKind
 {
     DeclK,
@@ -77,6 +84,7 @@ enum VarKind
 typedef struct treeNode
 {
     // connectivity in the tree
+    struct treeNode *parent;    //parent of the node
     struct treeNode *child[MAXCHILDREN]; // children of the node
     struct treeNode *sibling;            // siblings for the node
 
@@ -100,6 +108,10 @@ typedef struct treeNode
         char *string;         // used when a string constant
         char *name;           // used when IdK
     } attr;
+    UnionType unionType;
+
+    
+    bool isInitErrorThrown;
     OpKind op;
     bool isOp;
     //Has the attribute been set?
@@ -108,6 +120,8 @@ typedef struct treeNode
     bool isArray;    // is this an array
     int arraySize;
     bool isStatic;   // is staticly allocated?
+    bool isUsed;
+    bool isInit;
 
     // even more semantic stuff will go here in later assignments.
 } TreeNode;
@@ -135,4 +149,6 @@ void printTree(TreeNode *node,int indentLevel);
 void dumpNode(TreeNode *node);
 TreeNode *addSibling(TreeNode *t, TreeNode *s);
 void setType(TreeNode *t, ExpType type, bool isStatic);
+void convertExpTypeToString(ExpType type, char *string);
+void printSpaces(int indentLevel);
 #endif

@@ -7,6 +7,9 @@
 #include "scanType.h"
 #include "Tree.h"
 #include "ourgetopt.h"
+#include "symbolTable.h"
+#include "semantic.h"
+
 
 
 
@@ -121,7 +124,9 @@ varDeclInit     : varDeclId {$$ = $1;}
 
 varDeclId       : ID                                    {$$ = newDeclNode(VarK,UndefinedType,$1);
                                                          $$->attr.name = $1->tokenStr;
+                                                         $$->isArray = false;
                                                          $$->attrSet = true;
+
                                                         }
                 | ID OPEN_BRACK NUMCONST CLOSE_BRACK    {$$ = newDeclNode(VarK,UndefinedType,$1);
                                                          $$->attr.name = $1->tokenStr;
@@ -165,7 +170,8 @@ paramIdList     : paramIdList COMMA paramId {$$ = addSibling($1,$3);}
 
 paramId         : ID                        {$$ = newDeclNode(ParamK,UndefinedType,$1);
                                             $$->attr.name = $1->tokenStr;
-                                            $$->attrSet = true;                                               
+                                            $$->attrSet = true;
+                                            $$->isArray = false;                                                
                                             }
                 | ID OPEN_BRACK CLOSE_BRACK {$$ = newDeclNode(ParamK,UndefinedType,$1);
                                             $$->attr.name = $1->tokenStr;
@@ -424,11 +430,13 @@ factor          : immutable {$$ = $1;}
 mutable         : ID                                            { $$ = newExpNode(IdK,$1);
                                                                   $$->attr.name = $1->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  $$->isArray = false;  
                                                                 }
                 | ID OPEN_BRACK exp CLOSE_BRACK                 { 
                                                                   TreeNode * node = newExpNode(IdK,$1); 
                                                                   node->attr.name = $1->tokenStr;
                                                                   node->attrSet = true;
+                                                                  node->isArray = true;
                                                                   $$ = newExpNode(OpK,$2,node,$3);
                                                                   $$->attr.name = $2->tokenStr;
                                                                   $$->attrSet = true;
@@ -459,27 +467,32 @@ constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
                                   $$->attrSet = true;
                                   $$->expType = Integer;
+                                  $$->unionType = value;
                                 }
                 | CHARCONST     { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.cvalue = $1->cValue;
                                   $$->attrSet = true;
-                                  $$->expType = Char; 
+                                  $$->expType = Char;
+                                  $$->unionType = cvalue;
                                 }
                 | STRINGCONST   { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.string = $1->sValue; /*Shallow Cop*/
                                   $$->attrSet = true;
                                   $$->expType = Char;
                                   $$->isArray = true; 
+                                  $$->unionType = string;
                                 }
                 | TRUE          { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
                                   $$->attrSet = true;
                                   $$->expType = Boolean; 
+                                  $$->unionType = value;
                                 }
                 | FALSE         { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
                                   $$->attrSet = true;
-                                  $$->expType = Boolean; 
+                                  $$->expType = Boolean;
+                                  $$->unionType = value; 
                                 }
                 ;
 
@@ -574,16 +587,21 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
 */
 %%
 extern int yydebug;
+
+
+
 int main(int argc, char *argv[])
 {
     char c;
     bool printflag = false;
     bool errorflag = false;
     extern int optind;
+    extern int NUM_WARNINGS;
+    extern int NUM_ERRORS;
     while(1)
     {
         //Picking off the options we want. p
-        while((c = ourGetopt(argc,argv,(char*)"pd")) != -1)
+        while((c = ourGetopt(argc,argv,(char*)"Ppd")) != -1)
         {
             switch(c)
             {
@@ -591,6 +609,9 @@ int main(int argc, char *argv[])
                     errorflag = true;
                     break;
                 case 'p':
+                    printflag = true;
+                    break;
+                case 'P':
                     printflag = true;
                     break;
                 default:
@@ -609,6 +630,7 @@ int main(int argc, char *argv[])
             else {
                 // failed to open file
                 printf("ERROR: failed to open \'%s\'\n", argv[optind]);
+                
                 exit(1);
             }
             optind++;
@@ -625,7 +647,19 @@ int main(int argc, char *argv[])
     // do the parsing
     yyparse();
 
+    SymbolTable *symTab; 
+    symTab = new SymbolTable();
     if(printflag)
-        printTree(syntaxTree,0);
+    {
+      checkTree(symTab,syntaxTree,0,false,NULL);
+      printf("Number of warnings: %d\n",NUM_WARNINGS);
+      printf("Number of errors: %d\n",NUM_ERRORS);
+
+      //printTree(syntaxTree,0);
+
+      
+
+    }
     return 0;
 }
+

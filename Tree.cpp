@@ -17,7 +17,7 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->sibling = NULL;
 
     treeNode->lineno = token->lineNum;
-
+    
     treeNode->nodekind = DeclK;
 
     treeNode->subkind.decl = kind;
@@ -72,11 +72,14 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
 
     treeNode->isOp = false;
 
+
     if(kind == OpK)
     {
         treeNode->op = token->tokenClass;
         treeNode->isOp = true;
     }
+    if(kind == AssignK)
+        treeNode->op = token->tokenClass;
 
     return treeNode;
 }
@@ -319,4 +322,39 @@ void convertExpTypeToString(ExpType type, char *string)
         strcpy(string, "FAILURE");
         break;
     }
+}
+
+void dumpNode(treeNode *node)
+{
+    char buff[64];
+    convertExpTypeToString(node->expType,buff);
+    printf("linenumber:%d\n",node->lineno);
+    printf("token number: %d\n", node->op);
+    
+    if (node->unionType == string)
+    {
+        printf("Token string: %s\n", node->attr.string);
+    }
+    else if(node->unionType == cvalue)
+    {
+        printf("Token char: %s\n",node->attr.string);
+    }
+    else if(node->unionType == value)
+        printf("Token value: %d\n",node->attr.value);
+    else
+    {
+        printf("Unknown union type\n");
+    }
+
+    if(node->isInit)
+        printf("is init: true\n");
+    else
+        printf("is init: false\n");
+    
+    if(node->isStatic)
+        printf("is static: true\n");
+    else
+        printf("is static: false\n");
+    
+    printf("exptype: %s\n\n", buff);
 }
