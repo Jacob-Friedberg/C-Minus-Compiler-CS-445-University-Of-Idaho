@@ -112,6 +112,8 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 break;
             case IdK:
                 lookupNode = (treeNode *)symTab->lookup(std::string(node->attr.name));
+                //foo(lookupNode);
+                //symTab->print(foo);
                 if (lookupNode == NULL)
                 {
 
@@ -122,6 +124,9 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 {
                     lookupNode->isUsed = true;
                     node->expType = lookupNode->expType;
+                    node->isArray = lookupNode->isArray;
+                    node->isStatic = lookupNode->isStatic;
+                    node->isFunc = lookupNode->isFunc;
 
                     if (!lookupNode->isInit)
                     {
@@ -158,6 +163,11 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                             //foo(lookupNode);
                         }
                     }
+                    if (lookupNode->isFunc)
+                    {
+                        printf("ERROR(%d): Cannot use function '%s' as a variable.\n", node->lineno, node->attr.name);
+                        NUM_ERRORS++;
+                    }
                 }
 
                 //printf("Id: %s [line: %d]\n", node->attr.name, node->lineno);
@@ -171,6 +181,15 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
 
                 break;
             case CallK:
+
+                lookupNode = (treeNode *)symTab->lookup(std::string(node->attr.name));
+
+                if (lookupNode != NULL && !(lookupNode->isFunc))
+                {
+                    printf("ERROR(%d): '%s' is a simple variable and cannot be called.\n", node->lineno, node->attr.name);
+                    NUM_ERRORS++;
+                    break;
+                }
 
                 lookupNode = (treeNode *)symTab->lookupGlobal(std::string(node->attr.name));
                 if (lookupNode == NULL)
@@ -215,8 +234,15 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                     {
 
                         node->isUsed = false;
-                        node->isInit = false;
+                        //Special handleing for the case of init variables in for loops
+                        if(node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
+                            node->isInit = true;
+                        else
+                            node->isInit = false;
+
                         node->isInitErrorThrown = false;
+                        
+                        
                     }
                     else
                     {
@@ -249,6 +275,8 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 if (symTab->insertGlobal(std::string(node->attr.string), node))
                 {
                     node->isUsed = false;
+                    // node->isInit = true;
+                    node->isFunc = true;
                 }
                 else
                 {
@@ -309,9 +337,20 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
             //printf("child:%d was NULL at indent %d\n", i, indentLevel);
         }
 
+        if (node->nodekind == StmtK && node->subkind.stmt == ReturnK)
+        {
+
+            if (node->child[0] != NULL && node->child[0]->isArray)
+            {
+                printf("ERROR(%d): Cannot return an array.\n", node->lineno);
+                NUM_ERRORS++;
+            }
+        }
+
         //mark symbol node initilized if its on the LHS of an assignmnet
         if (node->nodekind == ExpK && node->subkind.exp == AssignK)
         {
+            bool isArrayRef = false;
             if (node->child[0] == NULL)
             {
                 printf("Unexpected Null child when checking init for assignk's\n");
@@ -326,6 +365,7 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 if (childNodeRef->op == OPEN_BRACK)
                 {
                     //printf("found [\n");
+                    isArrayRef = true;
                     childNodeRef = childNodeRef->child[0];
                 }
 
@@ -343,6 +383,12 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                         //printf("In lookup of child\n");
                         //foo(childNodeRef);
                     }
+                }
+                //if array reference inheret type from identifier.
+                if (isArrayRef)
+                {
+                    childNodeRef->parent->isArray = false;
+                    childNodeRef->parent->expType = childNodeRef->expType;
                 }
             }
         }
@@ -370,12 +416,12 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
             symTab->leave();
             isFor = false;
         }
-        //Array type promotion and error checking 
+        //Array type promotion and error checking
         if (node->nodekind == ExpK && node->subkind.exp == OpK && node->op == OPEN_BRACK)
         {
             //Setting the exptype of [ array to that of its Identifier.
             node->expType = node->child[0]->expType;
-            //make sure that the index of the array is an integer. 
+            //make sure that the index of the array is an integer.
             if (node->child[1]->expType != Integer)
             {
                 char buff[64];
@@ -384,17 +430,34 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                        node->lineno, node->child[0]->attr.name, buff);
                 NUM_ERRORS++;
             }
-        
+
             //check that the array identifier child[0] is declared as type array
             lookupNode = (treeNode *)symTab->lookup(std::string(node->child[0]->attr.name));
-            if(lookupNode != NULL && !(lookupNode->isArray))
+            if (lookupNode != NULL && !(lookupNode->isArray))
             {
-                 printf("ERROR(%d):Cannot index nonarray '%s'\n", node->child[0]->lineno,node->child[0]->attr.name);
-                 NUM_ERRORS++;
+                printf("ERROR(%d): Cannot index nonarray '%s'.\n", node->child[0]->lineno, node->child[0]->attr.name);
+                NUM_ERRORS++;
+            }
+            //if the ID is not in the symbol table, throw an error about indexing a non array. Because does not exist.
+            else if (lookupNode == NULL)
+            {
+                printf("ERROR(%d): Cannot index nonarray '%s'.\n", node->child[0]->lineno, node->child[0]->attr.name);
+                NUM_ERRORS++;
             }
 
-            //throw an error if the array is not indexed 
-
+            //throw an error if the array is not indexed
+            if (node->child[1]->nodekind == ExpK && node->child[1]->subkind.exp == IdK)
+            {
+                //printf("in array not indexed\n");
+                //foo(node->child[1]);
+                lookupNode = (treeNode *)symTab->lookup(std::string(node->child[1]->attr.name));
+                if (lookupNode != NULL && lookupNode->isArray)
+                {
+                    printf("ERROR(%d): Array index is the unindexed array '%s'.\n", node->child[1]->lineno, node->child[1]->attr.name);
+                    NUM_ERRORS++;
+                }
+            }
+            node->isArray = false;
         }
 
         if (node->nodekind == ExpK && ((node->subkind.exp == OpK || node->subkind.exp == AssignK) && node->op != OPEN_BRACK))
@@ -414,41 +477,13 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 else
                     printf("size of lookup failed. child node is not IDk\n");
             }
-            //Unary question recieved
-            else if (node->op == QUESTION)
-            {
-                //lookup the child to see if it is an array
-                if (node->child[0]->subkind.exp == IdK)
-                {
-                    lookupNode = (treeNode *)symTab->lookup(std::string(node->child[0]->attr.name));
-                    //if it is throw an error
-                    if (lookupNode != NULL && (lookupNode->isArray))
-                    {
-                        printf("ERROR(%d): The operation '%s' does not work with arrays.\n", node->lineno, node->attr.string);
-                        NUM_ERRORS++;
-                        typeTable(node, node->child[0], node->child[1]);
-                    }
-                    //if not let it go to the type table
-                    else
-                        node->expType = typeTable(node, node->child[0], node->child[1]);
-                }
-                else
-                    printf("size of lookup failed. child node is not IDk\n");
-            }
             else
             {
                 node->expType = typeTable(node, node->child[0], node->child[1]);
             }
         }
 
-        if (node->sibling != NULL)
-        {
-            //printSpaces(indentLevel);
-            //printf("Sibling: %d ", sibling_count++);
-            node = node->sibling;
-        }
-        else
-            node = node->sibling;
+        node = node->sibling;
     }
 }
 
@@ -480,7 +515,18 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             lhs = lhsNode->expType;
             rhs = rhsNode->expType;
             if (lhs == Integer && rhs == Integer)
+            {
+                // printf("testing if array\n");
+                // foo(lhsNode);
+                // foo(rhsNode);
+                if (!lhsNode->isArray && !rhsNode->isArray)
+                    return Integer;
+
+                printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                NUM_ERRORS++;
+
                 return Integer;
+            }
 
             convertExpTypeToString(lhs, buff1);
             convertExpTypeToString(rhs, buff2);
@@ -510,17 +556,24 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                        buff2);
                 NUM_ERRORS++;
             }
-            // printf("ERROR(%d): '%s' requires operands of type int but lhs is %s and rhs is %s.\n",
-            //        opNode->lineno, opNode->attr.string,
-            //        buff1,
-            //        buff2);
+            if (lhsNode->isArray || rhsNode->isArray)
+            {
+                printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                NUM_ERRORS++;
+            }
+            return Integer;
         }
-        else if (op == CHSIGN || op == QUESTION || op == INC || op == DEC)
+        else if (op == CHSIGN || op == QUESTION)
         {
             lhs = lhsNode->expType;
 
             if (lhs == Integer)
             {
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, op == CHSIGN ? "chsign" : "?");
+                    NUM_ERRORS++;
+                }
                 return lhs;
             }
 
@@ -533,6 +586,12 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                        "int",
                        buff1);
                 NUM_ERRORS++;
+
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation 'chsign' does not work with arrays.\n", parentNode->lineno);
+                    NUM_ERRORS++;
+                }
             }
             else
             {
@@ -546,13 +605,44 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
 
             return lhs;
         }
+        //TODO ARRAY CHECKING PLEASE
         else if (op == LEQ || op == LESS || op == GREATER || op == GEQ || op == EQ || op == NEQ)
         {
             lhs = lhsNode->expType;
             rhs = rhsNode->expType;
             //printf("in rel ops\n");
+
+            if (op == EQ || op == NEQ)
+            {
+                if ((!lhsNode->isArray && rhsNode->isArray))
+                {
+                    printf("ERROR(%d): '%s' requires both operands be arrays or not but lhs is not an array and rhs is an array.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
+                else if (lhsNode->isArray && (!rhsNode->isArray))
+                {
+                    printf("ERROR(%d): '%s' requires both operands be arrays or not but lhs is an array and rhs is not an array.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
+            }
+            else if (op == GEQ || op == LEQ || op == LESS || op == GREATER)
+            {
+                if ((!lhsNode->isArray && rhsNode->isArray))
+                {
+                    printf("ERROR(%d): '%s' requires both operands be arrays or not but lhs is not an array and rhs is an array.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
+                else if (lhsNode->isArray && (!rhsNode->isArray))
+                {
+                    printf("ERROR(%d): '%s' requires both operands be arrays or not but lhs is an array and rhs is not an array.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
+            }
+
             if (lhs == rhs)
+            {
                 return Boolean;
+            }
 
             convertExpTypeToString(lhs, buff1);
             convertExpTypeToString(rhs, buff2);
@@ -563,6 +653,93 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             printf("ERROR(%d): '%s' requires operands of the same type but lhs is type %s and rhs is type %s.\n",
                    parentNode->lineno, parentNode->attr.string, buff1, buff2);
             NUM_ERRORS++;
+
+            return Boolean;
+        }
+        else if (op == AND || op == OR)
+        {
+            lhs = lhsNode->expType;
+            rhs = rhsNode->expType;
+            if (lhs == Boolean && rhs == Boolean)
+            {
+                if (lhsNode->isArray || rhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                    return UndefinedType;
+                }
+                return Boolean;
+            }
+
+            convertExpTypeToString(lhs, buff1);
+            convertExpTypeToString(rhs, buff2);
+
+            //foo(lhsNode);
+            //foo(rhsNode);
+            if (lhs == Boolean && rhs != Boolean)
+            {
+                printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff2);
+                NUM_ERRORS++;
+            }
+            else if (lhs != Boolean && rhs == Boolean)
+            {
+                printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff1);
+                NUM_ERRORS++;
+            }
+            else
+            {
+                printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff1);
+                NUM_ERRORS++;
+
+                printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff2);
+                NUM_ERRORS++;
+            }
+
+            if (lhsNode->isArray || rhsNode->isArray)
+            {
+                printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                NUM_ERRORS++;
+            }
+            return Boolean;
+        }
+
+        else if (op == NOT)
+        {
+            lhs = lhsNode->expType;
+            //printf("in rel ops\n");
+            if (lhs == Boolean)
+            {
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation 'not' does not work with arrays.\n", parentNode->lineno);
+                    NUM_ERRORS++;
+                }
+
+                return Boolean;
+            }
+
+            convertExpTypeToString(lhs, buff1);
+
+            printf("ERROR(%d): Unary 'not' requires an operand of type %s but was given type %s.\n",
+                   parentNode->lineno,
+                   "bool",
+                   buff1);
+            NUM_ERRORS++;
+
+            if (lhsNode->isArray)
+            {
+                printf("ERROR(%d): The operation 'not' does not work with arrays.\n", parentNode->lineno);
+                NUM_ERRORS++;
+            }
+            return Boolean;
         }
     }
     // LHS = RHS |  LHS += RHS | LHS -= RHS | LHS /= RHS | LHS++ | LHS--
@@ -593,6 +770,8 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                            parentNode->lineno, parentNode->attr.string);
                     NUM_ERRORS++;
                 }
+
+                return lhs;
             }
             else
             {
@@ -604,7 +783,11 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                     NUM_ERRORS++;
                 }
             }
+
+            return lhs;
         }
+        //TODO:
+        //CHECK FOR ARRAYS NOT CURRENTLY IMPLEMTED
         else if (op == DEC || op == INC)
         {
             lhs = lhsNode->expType;
@@ -612,7 +795,15 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             convertExpTypeToString(lhs, buff1);
 
             if (lhs == Integer)
+            {
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
                 return lhs;
+            }
+
             else
             {
                 printf("ERROR(%d): Unary '%s' requires an operand of type %s but was given type %s.\n",
@@ -620,9 +811,87 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                        "int",
                        buff1);
                 NUM_ERRORS++;
+
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
             }
+            return Integer;
+        }
+        else if (op == AND || op == OR)
+        {
+            lhs = lhsNode->expType;
+            rhs = rhsNode->expType;
+            if (lhs == Boolean && rhs == Boolean)
+                return Boolean;
+
+            convertExpTypeToString(lhs, buff1);
+            convertExpTypeToString(rhs, buff2);
+
+            //foo(lhsNode);
+            //foo(rhsNode);
+            if (lhs == Boolean && rhs != Boolean)
+            {
+                printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff2);
+                NUM_ERRORS++;
+            }
+            else if (lhs != Boolean && rhs == Boolean)
+            {
+                printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff1);
+                NUM_ERRORS++;
+            }
+            else
+            {
+                printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff1);
+                NUM_ERRORS++;
+
+                printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff2);
+                NUM_ERRORS++;
+            }
+            return Boolean;
+        }
+
+        else if (op == NOT)
+        {
+            lhs = lhsNode->expType;
+            //printf("in rel ops\n");
+            if (lhs == Boolean)
+            {
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
+                return Boolean;
+            }
+
+            convertExpTypeToString(lhs, buff1);
+
+            printf("ERROR(%d): Unary 'not' requires an operand of type %s but was given type %s.\n",
+                   parentNode->lineno,
+                   "bool",
+                   buff1);
+            NUM_ERRORS++;
+
+            if (lhsNode->isArray)
+            {
+                printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                NUM_ERRORS++;
+            }
+            return Boolean;
         }
     }
     //printf("Fell out of table\n");
+
     return UndefinedType;
 }

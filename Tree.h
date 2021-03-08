@@ -110,7 +110,7 @@ typedef struct treeNode
     } attr;
     UnionType unionType;
 
-    
+    bool isFunc;
     bool isInitErrorThrown;
     OpKind op;
     bool isOp;

@@ -342,21 +342,21 @@ exp             : mutable ASS exp                               { $$ = newExpNod
                 ;
 
 simpleExp       : simpleExp OR andExp                           { $$ = newExpNode(OpK,$2,$1,$3);
-                                                                  $$->attr.string = toUpperString($2->tokenStr);
+                                                                  $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
                 | andExp   {$$ = $1;}
                 ;
 
 andExp          : andExp AND unaryRelExp                        { $$ = newExpNode(OpK,$2,$1,$3);
-                                                                  $$->attr.string = toUpperString($2->tokenStr);
+                                                                  $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
                 | unaryRelExp   {$$ = $1;}
                 ;
                 
 unaryRelExp     : NOT unaryRelExp                               { $$ = newExpNode(OpK,$1,$2);
-                                                                  $$->attr.string = toUpperString($1->tokenStr);
+                                                                  $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
                 | relExp {$$ = $1;}
@@ -629,8 +629,11 @@ int main(int argc, char *argv[])
             }
             else {
                 // failed to open file
-                printf("ERROR: failed to open \'%s\'\n", argv[optind]);
-                
+                printf("ERROR(ARGLIST): source file \"%s\" could not be opened.\n", argv[optind]);
+                NUM_ERRORS++;
+                printf("Number of warnings: %d\n",NUM_WARNINGS);
+                printf("Number of errors: %d\n",NUM_ERRORS);
+
                 exit(1);
             }
             optind++;

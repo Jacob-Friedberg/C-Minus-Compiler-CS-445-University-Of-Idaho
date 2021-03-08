@@ -17,12 +17,14 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->sibling = NULL;
 
     treeNode->lineno = token->lineNum;
-    
+
     treeNode->nodekind = DeclK;
 
     treeNode->subkind.decl = kind;
 
     treeNode->expType = type;
+
+    treeNode->isFunc = false;
 
     treeNode->attrSet = false;
 
@@ -45,6 +47,7 @@ TreeNode *newStmtNode(StmtKind kind, TokenData *token, TreeNode *c0, TreeNode *c
     treeNode->subkind.stmt = kind;
 
     treeNode->expType = UndefinedType;
+    treeNode->isFunc = false;
 
     treeNode->attrSet = false;
 
@@ -60,25 +63,23 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
     treeNode->sibling = NULL;
 
     treeNode->lineno = token->lineNum;
- 
 
     treeNode->nodekind = ExpK;
 
     treeNode->subkind.exp = kind;
-
+    treeNode->isFunc = false;
     treeNode->expType = UndefinedType;
 
     treeNode->attrSet = false;
 
     treeNode->isOp = false;
 
-
-    if(kind == OpK)
+    if (kind == OpK)
     {
         treeNode->op = token->tokenClass;
         treeNode->isOp = true;
     }
-    if(kind == AssignK)
+    if (kind == AssignK)
         treeNode->op = token->tokenClass;
 
     return treeNode;
@@ -144,11 +145,11 @@ void printTree(TreeNode *node, int indentLevel)
             switch (node->subkind.exp)
             {
             case OpK:
-                if(node->isOp && node->op == CHSIGN)
+                if (node->isOp && node->op == CHSIGN)
                 {
                     printf("Op: CHSIGN [line: %d]\n", node->lineno);
                 }
-                else if(node->isOp && node->op == SIZEOF)
+                else if (node->isOp && node->op == SIZEOF)
                 {
                     printf("Op: SIZEOF [line: %d]\n", node->lineno);
                 }
@@ -327,34 +328,44 @@ void convertExpTypeToString(ExpType type, char *string)
 void dumpNode(treeNode *node)
 {
     char buff[64];
-    convertExpTypeToString(node->expType,buff);
-    printf("linenumber:%d\n",node->lineno);
+    convertExpTypeToString(node->expType, buff);
+    printf("linenumber:%d\n", node->lineno);
     printf("token number: %d\n", node->op);
-    
+
     if (node->unionType == string)
     {
         printf("Token string: %s\n", node->attr.string);
     }
-    else if(node->unionType == cvalue)
+    else if (node->unionType == cvalue)
     {
-        printf("Token char: %s\n",node->attr.string);
+        printf("Token char: %s\n", node->attr.string);
     }
-    else if(node->unionType == value)
-        printf("Token value: %d\n",node->attr.value);
+    else if (node->unionType == value)
+        printf("Token value: %d\n", node->attr.value);
     else
     {
         printf("Unknown union type\n");
     }
 
-    if(node->isInit)
+    if (node->isInit)
         printf("is init: true\n");
     else
         printf("is init: false\n");
-    
-    if(node->isStatic)
+
+    if (node->isStatic)
         printf("is static: true\n");
     else
         printf("is static: false\n");
-    
+
+    if (node->isArray)
+        printf("is array: true\n");
+    else
+        printf("is array: false\n");
+
+    if (node->isFunc)
+        printf("is Func: true\n");
+    else
+        printf("is Func: false\n");
+
     printf("exptype: %s\n\n", buff);
 }
