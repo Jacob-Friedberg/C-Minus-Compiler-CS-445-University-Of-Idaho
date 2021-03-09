@@ -1,31 +1,73 @@
 // C-S21
-main()
+//
+// Test all the basic elements of C-
+//
+//
+int gromit, mysteriousPenguin;
+
+// no return value
+wallace(int wrong, trousers)
 {
-    int aa[3];
-    bool ba[3];
-    char ca[3];
+    bool close:true, shave:false;
+    int cheese:17;
+   
+    1729;
+    close;
+    11*22+33*44;
+    close = shave;
+    wrong = trousers % (666/wrong);
+    gromit = wrong * trousers - gromit + -42;
+    gromit += 27182818;
+    gromit -= -31415927;
+    gromit /= (wrong *= 42);
+    close = wrong < trousers and trousers <= gromit;
+    shave = wrong > trousers and trousers >= gromit;
+    {
+        int a, grand:1/2, day:3*4, out:-9;
+        a = grand += day -= out;
+    }
+    close = -1*2+3<4*5 and 6+7>-3;
+    shave = true or ((-(1*(2+3)))<(4*5) and ((6+7)>(-3)));
+    if shave != close then shave = not close;
+    if not  (shave == close or  not  close) then shave = true;
+    else close = false;
+    mysteriousPenguin = - (- (- 008) - -(cheese--));
 
-    aa[0] = 100;
-    aa[1] = 101;
-    aa[2] = 102;
+    while shave do {
+        static int were, rabbit;
+        static int sheep[10];
 
-    bb[0] = true;
-    bb[1] = false;
-    bb[2] = true;
+        sheep[2] = 1618;
+        if sheep[2]<496 then break;
+        wallace(gromit--, were-rabbit);
+        { 
+            int the, wrong, trousers;
 
-    cc[0] = 'a';
-    cc[1] = 'b';
-    ca[2] = 'c';
+            the = wrong += trousers++;
+            if were == rabbit then were = wrong--;  // assignment is in test
+        }
+    }
+    return;
+}       
 
-    for i = 0 to 2 do output(a[i]);
-    outnl();
+       
 
-    for i = 0 to 2 do outputb(b[i]);
-    outnl();
-
-    for i = 0 to 2 do outputc(c[i]);
-    outnl();
-
-    for i = 1 to 3 do for j = 1 to 6 by 2 do output(i*j);
+int Wendolene(int wool; bool shaun; int yarn[]; bool preston[])
+{
+    int skein;
+    preston[3] = yarn[1] > wool or not shaun;
+    return wool + yarn[0] + *yarn + yarn[7*wool] + yarn[yarn[3+wool*2]-4];
 }
 
+
+bool ramsBottom()
+{
+    int chicken[2];
+    bool run[3];
+    int wallace[2], gromit[3];
+
+    42 * Wendolene(1+2+3, not true or true and false, chicken, run);
+    run[*run-1];
+
+    return not wallace[1]>=-gromit[2]*3;
+}

@@ -109,7 +109,8 @@ typedef struct treeNode
         char *name;           // used when IdK
     } attr;
     UnionType unionType;
-
+    //Depth of the stack of scopes when it is entered into the symbol table 
+    int depth;
     bool isFunc;
     bool isInitErrorThrown;
     OpKind op;

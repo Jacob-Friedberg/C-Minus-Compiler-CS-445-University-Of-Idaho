@@ -21,17 +21,27 @@ void foo(void *x)
     dumpNode((treeNode *)x);
 }
 
-void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppressScope, TreeNode *parent)
+//Parent suppress scope means the parent node is a function and needs to suppress child cmpd statments
+//Child suppress scope means the parent is a function
+void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool parentSuppressScope, TreeNode *parent)
 {
     char typing[64];
     int sibling_count = 1;
     bool isCompound = false;
     bool isFor = false;
     bool isAssign = false;
+    bool isFuncDecl = false;
+    bool childSuppressScope = false;
     treeNode *lookupNode;
-    //symTab->debug(true);
+   // symTab->debug(true);
     while (node != NULL)
     {
+        bool isCompound = false;
+        bool isFor = false;
+        bool isAssign = false;
+        bool isFuncDecl = false;
+        bool childSuppressScope = false;
+
         node->parent = parent;
         convertExpTypeToString(node->expType, typing);
 
@@ -51,15 +61,15 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
             case ForK:
                 symTab->enter(std::string("this is a for loop"));
                 isFor = true;
+                childSuppressScope = true;
                 //printf("For [line: %d]\n", node->lineno);
                 break;
             case CompoundK:
                 //printf("Compound [line: %d]\n", node->lineno);
-                if (!suppressScope)
+                if (!parentSuppressScope)
                 {
                     symTab->enter(std::string("THIS IS A COMPOUND"));
                 }
-                suppressScope = false;
                 isCompound = true;
                 break;
             case ReturnK:
@@ -226,43 +236,43 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 }
 
                 //Check globally for variables already declared.
-                lookupNode = (treeNode *)symTab->lookupGlobal(node->attr.name);
+
+                //lookupNode = (treeNode *)symTab->lookupGlobal(node->attr.name);
                 //If the symbol does not exist then we can add it
-                if (lookupNode == NULL)
+                // if (lookupNode == NULL)
+                // {
+                if (symTab->insert(std::string(node->attr.name), (void *)node))
                 {
-                    if (symTab->insert(std::string(node->attr.name), (void *)node))
-                    {
-
-                        node->isUsed = false;
-                        //Special handleing for the case of init variables in for loops
-                        if(node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
-                            node->isInit = true;
-                        else
-                            node->isInit = false;
-
-                        node->isInitErrorThrown = false;
-                        
-                        
-                    }
+                    node->depth = symTab->depth();
+                    node->isUsed = false;
+                    //Special handleing for the case of init variables in for loops
+                    if (node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
+                        node->isInit = true;
                     else
-                    {
-                        lookupNode = (treeNode *)symTab->lookup(node->attr.name);
-                        printf("ERROR(%d): Symbol '%s' is already declared at line %d.\n",
-                               node->lineno,
-                               lookupNode->attr.name,
-                               lookupNode->lineno);
-                        NUM_ERRORS++;
-                    }
+                        node->isInit = false;
+
+                    node->isInitErrorThrown = false;
                 }
-                //throw error on already declared variable
                 else
                 {
+                    lookupNode = (treeNode *)symTab->lookup(node->attr.name);
                     printf("ERROR(%d): Symbol '%s' is already declared at line %d.\n",
                            node->lineno,
                            lookupNode->attr.name,
                            lookupNode->lineno);
                     NUM_ERRORS++;
                 }
+                //}
+                //throw error on already declared global variable
+                //Disabling for now, most likley not needed.
+                // else
+                // {
+                //     printf("ERROR(%d): Symbol '%s' is already declared at line %d.\n",
+                //            node->lineno,
+                //            lookupNode->attr.name,
+                //            lookupNode->lineno);
+                //     NUM_ERRORS++;
+                // }
 
                 break;
             case FuncK:
@@ -274,9 +284,11 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 //printf("Func: %s returns type %s [line: %d]\n", node->attr.string, typing, node->lineno);
                 if (symTab->insertGlobal(std::string(node->attr.string), node))
                 {
+                    node->depth = symTab->depth();
                     node->isUsed = false;
                     // node->isInit = true;
                     node->isFunc = true;
+                    isFuncDecl = true;
                 }
                 else
                 {
@@ -287,8 +299,9 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                            lookupNode->lineno);
                     NUM_ERRORS++;
                 }
+                //prob shouldn't enter regardless if there is an error.
                 symTab->enter(std::string(node->attr.string));
-                suppressScope = true;
+                childSuppressScope = true;
                 break;
             case ParamK:
                 if (node->attr.name == NULL)
@@ -302,14 +315,35 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
                 if (node->isArray)
                 {
                     node->isUsed = false;
-                    symTab->insert(std::string(node->attr.name), (void *)node);
+                    node->isInit = true;
+                    //If the param is already added
+                    if (!symTab->insert(std::string(node->attr.name), (void *)node))
+                    {
+                        lookupNode = (treeNode *)symTab->lookup(node->attr.string);
+                        printf("ERROR(%d): Symbol '%s' is already declared at line %d.\n",
+                               node->lineno,
+                               lookupNode->attr.string,
+                               lookupNode->lineno);
+                        NUM_ERRORS++;
+                    }
+                    node->depth = symTab->depth();
                 }
 
                 //printf("Parm: %s is array of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
                 else
                 {
                     node->isUsed = false;
-                    symTab->insert(std::string(node->attr.name), (void *)node);
+                    node->isInit = true;
+                    if (!symTab->insert(std::string(node->attr.name), (void *)node))
+                    {
+                        lookupNode = (treeNode *)symTab->lookup(node->attr.string);
+                        printf("ERROR(%d): Symbol '%s' is already declared at line %d.\n",
+                               node->lineno,
+                               lookupNode->attr.string,
+                               lookupNode->lineno);
+                        NUM_ERRORS++;
+                    }
+                    node->depth = symTab->depth();
                 }; //printf("Parm: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
                 break;
             default:
@@ -331,7 +365,7 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
             {
                 //printSpaces(indentLevel + 1);
                 //printf("Child: %d ", i);
-                checkTree(symTab, node->child[i], indentLevel + 1, suppressScope, node);
+                checkTree(symTab, node->child[i], indentLevel + 1, childSuppressScope, node);
             }
             //else
             //printf("child:%d was NULL at indent %d\n", i, indentLevel);
@@ -406,15 +440,31 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
         {
             //symTab->print(foo);
             symTab->applyToAll(checkIsUsed);
-            symTab->leave();
+
+            if (!parentSuppressScope)
+            {
+                symTab->leave();
+            }
             isCompound = false;
+            parentSuppressScope = false;
         }
         if (isFor)
         {
             //symTab->print(foo);
-            symTab->applyToAll(checkIsUsed);
+            if(!(node->child[2]->nodekind == StmtK && node->child[2]->subkind.stmt == CompoundK))
+                symTab->applyToAll(checkIsUsed);
+                
             symTab->leave();
+            childSuppressScope = false;
             isFor = false;
+            
+        }
+        if (isFuncDecl)
+        {
+            //printf("Leaving Function\n");
+            symTab->leave();
+
+            childSuppressScope = false;
         }
         //Array type promotion and error checking
         if (node->nodekind == ExpK && node->subkind.exp == OpK && node->op == OPEN_BRACK)
@@ -464,6 +514,8 @@ void checkTree(SymbolTable *symTab, TreeNode *node, int indentLevel, bool suppre
         {
             if (node->op == SIZEOF)
             {
+                //fixing op node. This node always returns an int
+                node->expType = Integer;
                 if (node->child[0]->subkind.exp == IdK)
                 {
                     lookupNode = (treeNode *)symTab->lookup(std::string(node->child[0]->attr.name));
@@ -567,43 +619,41 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
         {
             lhs = lhsNode->expType;
 
-            if (lhs == Integer)
+            if (lhsNode->isArray)
             {
-                if (lhsNode->isArray)
-                {
-                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, op == CHSIGN ? "chsign" : "?");
-                    NUM_ERRORS++;
-                }
-                return lhs;
+                printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, op == CHSIGN ? "chsign" : "?");
+                NUM_ERRORS++;
             }
 
             convertExpTypeToString(lhs, buff1);
 
             if (op == CHSIGN)
             {
-                printf("ERROR(%d): Unary 'chsign' requires an operand of type %s but was given type %s.\n",
-                       parentNode->lineno,
-                       "int",
-                       buff1);
-                NUM_ERRORS++;
-
-                if (lhsNode->isArray)
+                if (lhs != Integer)
                 {
-                    printf("ERROR(%d): The operation 'chsign' does not work with arrays.\n", parentNode->lineno);
+                    printf("ERROR(%d): Unary 'chsign' requires an operand of type %s but was given type %s.\n",
+                           parentNode->lineno,
+                           "int",
+                           buff1);
+                    NUM_ERRORS++;
+                }
+
+                return Integer;
+            }
+            //This must be a QUESTION
+            else
+            {
+                if (lhs != Integer)
+                {
+                    printf("ERROR(%d): Unary '%s' requires an operand of type %s but was given type %s.\n",
+                           parentNode->lineno, parentNode->attr.string,
+                           "int",
+                           buff1);
                     NUM_ERRORS++;
                 }
             }
-            else
-            {
 
-                printf("ERROR(%d): Unary '%s' requires an operand of type %s but was given type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       "int",
-                       buff1);
-                NUM_ERRORS++;
-            }
-
-            return lhs;
+            return Integer;
         }
         //TODO ARRAY CHECKING PLEASE
         else if (op == LEQ || op == LESS || op == GREATER || op == GEQ || op == EQ || op == NEQ)
@@ -650,9 +700,13 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             //foo(lhsNode);
             //foo(rhsNode);
 
-            printf("ERROR(%d): '%s' requires operands of the same type but lhs is type %s and rhs is type %s.\n",
-                   parentNode->lineno, parentNode->attr.string, buff1, buff2);
-            NUM_ERRORS++;
+            //suppressing. assuming the undefined type error is already handled in main loop
+            if (lhs != UndefinedType)
+            {
+                printf("ERROR(%d): '%s' requires operands of the same type but lhs is type %s and rhs is type %s.\n",
+                       parentNode->lineno, parentNode->attr.string, buff1, buff2);
+                NUM_ERRORS++;
+            }
 
             return Boolean;
         }
@@ -785,6 +839,55 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             }
 
             return lhs;
+        }
+        else if (op == ADDASS || op == SUBASS || op == MULASS || op == DIVASS)
+        {
+            //printf("made it to the code\n");
+            lhs = lhsNode->expType;
+            rhs = rhsNode->expType;
+
+            convertExpTypeToString(lhs, buff1);
+            convertExpTypeToString(rhs, buff2);
+            if (lhs == Integer && rhs == Integer)
+            {
+                //These operators do not support arrays. throw error
+                if (lhsNode->isArray || rhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                   
+                }
+                return Integer;
+            }
+
+            if (lhs == Integer && rhs != Integer)
+            {
+                printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff2);
+                NUM_ERRORS++;
+            }
+            else if (lhs != Integer && rhs == Integer)
+            {
+                printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff1);
+                NUM_ERRORS++;
+            }
+            else
+            {
+                printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff1);
+                NUM_ERRORS++;
+
+                printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
+                       parentNode->lineno, parentNode->attr.string,
+                       buff2);
+                NUM_ERRORS++;
+            }
+
+            return Integer;
         }
         //TODO:
         //CHECK FOR ARRAYS NOT CURRENTLY IMPLEMTED

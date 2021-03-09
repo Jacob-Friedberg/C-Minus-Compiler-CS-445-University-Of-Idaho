@@ -655,6 +655,13 @@ int main(int argc, char *argv[])
     if(printflag)
     {
       checkTree(symTab,syntaxTree,0,false,NULL);
+
+      if(symTab->lookupGlobal(std::string("main")) == NULL)
+      {
+        printf("ERROR(LINKER): A function named 'main()' must be defined.\n");
+        NUM_ERRORS++;
+      }
+
       printf("Number of warnings: %d\n",NUM_WARNINGS);
       printf("Number of errors: %d\n",NUM_ERRORS);
 
