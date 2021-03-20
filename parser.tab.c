@@ -2471,7 +2471,7 @@ int main(int argc, char *argv[])
     symTab = new SymbolTable();
     if(printflag)
     {
-      checkTree(symTab,syntaxTree,0,false,NULL);
+      checkTree2(symTab,syntaxTree,false,NULL);
       treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
       //Child 0 is our params. This means main() child 0 is NULL and main(params a) child 0 is non null
       //We also need to make sure its a function
