@@ -110,6 +110,8 @@ typedef struct treeNode
     } attr;
     UnionType unionType;
     //Depth of the stack of scopes when it is entered into the symbol table 
+    bool isRangeKBy;
+    bool isRangeK;
     int depth;
     bool isFunc;
     bool isInitErrorThrown;
@@ -147,6 +149,7 @@ TreeNode *newExpNode(ExpKind kind,
                      TreeNode *c2 = NULL);
 
 void printTree(TreeNode *node,int indentLevel);
+void printTypedTree(TreeNode *node,int indentLevel);
 void dumpNode(TreeNode *node);
 TreeNode *addSibling(TreeNode *t, TreeNode *s);
 void setType(TreeNode *t, ExpType type, bool isStatic);

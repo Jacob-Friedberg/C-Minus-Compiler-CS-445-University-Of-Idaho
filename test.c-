@@ -1,73 +1,22 @@
 // C-S21
-//
-// Test all the basic elements of C-
-//
-//
-int gromit, mysteriousPenguin;
-
-// no return value
-wallace(int wrong, trousers)
+main()
 {
-    bool close:true, shave:false;
-    int cheese:17;
-   
-    1729;
-    close;
-    11*22+33*44;
-    close = shave;
-    wrong = trousers % (666/wrong);
-    gromit = wrong * trousers - gromit + -42;
-    gromit += 27182818;
-    gromit -= -31415927;
-    gromit /= (wrong *= 42);
-    close = wrong < trousers and trousers <= gromit;
-    shave = wrong > trousers and trousers >= gromit;
-    {
-        int a, grand:1/2, day:3*4, out:-9;
-        a = grand += day -= out;
-    }
-    close = -1*2+3<4*5 and 6+7>-3;
-    shave = true or ((-(1*(2+3)))<(4*5) and ((6+7)>(-3)));
-    if shave != close then shave = not close;
-    if not  (shave == close or  not  close) then shave = true;
-    else close = false;
-    mysteriousPenguin = - (- (- 008) - -(cheese--));
+   int x;
 
-    while shave do {
-        static int were, rabbit;
-        static int sheep[10];
+   if 111 then 
+      for x = x to x by x do
+         if 333 then 
+            for x = 1 to  x do 555;
+         else 666;
+   else 777;
 
-        sheep[2] = 1618;
-        if sheep[2]<496 then break;
-        wallace(gromit--, were-rabbit);
-        { 
-            int the, wrong, trousers;
+   if 111 then 
+      for x = 1 to 2 by x*x do 333;
+   else
+      for x = 1 to x do 555;
 
-            the = wrong += trousers++;
-            if were == rabbit then were = wrong--;  // assignment is in test
-        }
-    }
-    return;
-}       
-
-       
-
-int Wendolene(int wool; bool shaun; int yarn[]; bool preston[])
-{
-    int skein;
-    preston[3] = yarn[1] > wool or not shaun;
-    return wool + yarn[0] + *yarn + yarn[7*wool] + yarn[yarn[3+wool*2]-4];
-}
-
-
-bool ramsBottom()
-{
-    int chicken[2];
-    bool run[3];
-    int wallace[2], gromit[3];
-
-    42 * Wendolene(1+2+3, not true or true and false, chicken, run);
-    run[*run-1];
-
-    return not wallace[1]>=-gromit[2]*3;
+   if 111 then 
+      for x = 1 to 10 do
+         for x = x to 10 do 555;
+   else 666;
 }

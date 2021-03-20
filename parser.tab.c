@@ -619,18 +619,18 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    92,    92,    95,    96,    99,   100,   103,   106,   109,
-     116,   117,   120,   121,   125,   131,   139,   140,   141,   145,
-     150,   156,   157,   160,   161,   164,   167,   168,   171,   176,
-     193,   194,   197,   198,   199,   200,   201,   202,   205,   206,
-     210,   211,   214,   220,   221,   224,   225,   233,   239,   243,
-     249,   253,   264,   269,   285,   290,   296,   300,   306,   313,
-     317,   321,   325,   329,   333,   337,   341,   344,   348,   351,
-     355,   358,   362,   365,   369,   372,   373,   374,   375,   376,
-     377,   380,   384,   387,   388,   391,   395,   398,   399,   402,
-     406,   409,   410,   411,   414,   418,   421,   422,   423,   426,
-     427,   430,   435,   447,   448,   449,   452,   458,   459,   462,
-     463,   466,   472,   478,   485,   491
+       0,    92,    92,    95,    99,   102,   103,   106,   109,   112,
+     119,   121,   124,   125,   129,   135,   143,   144,   145,   149,
+     154,   160,   161,   164,   166,   169,   172,   174,   177,   182,
+     199,   200,   203,   204,   205,   206,   207,   208,   211,   212,
+     216,   217,   220,   226,   228,   231,   233,   241,   247,   251,
+     257,   261,   272,   277,   293,   298,   304,   308,   314,   321,
+     325,   329,   333,   337,   341,   345,   349,   352,   356,   359,
+     363,   366,   370,   373,   377,   380,   381,   382,   383,   384,
+     385,   388,   392,   395,   396,   399,   403,   406,   407,   410,
+     414,   417,   418,   419,   422,   426,   429,   430,   431,   434,
+     435,   438,   443,   455,   456,   457,   460,   466,   467,   470,
+     472,   475,   481,   487,   494,   500
 };
 #endif
 
@@ -1356,339 +1356,347 @@ yyreduce:
 
   case 3: /* declList: declList decl  */
 #line 95 "parser.y"
-                                 {(yyval.treenode) = addSibling((yyvsp[-1].treenode),(yyvsp[0].treenode));}
-#line 1361 "parser.tab.c"
+                                 { //printf("In DeclList Processing\n");
+                                   (yyval.treenode) = addSibling((yyvsp[-1].treenode),(yyvsp[0].treenode));
+                                   //printf("OUT OF DECLLIST PROCESSING\n");
+                                   }
+#line 1364 "parser.tab.c"
     break;
 
   case 4: /* declList: decl  */
-#line 96 "parser.y"
+#line 99 "parser.y"
                        {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1367 "parser.tab.c"
+#line 1370 "parser.tab.c"
     break;
 
   case 5: /* decl: varDecl  */
-#line 99 "parser.y"
+#line 102 "parser.y"
                           {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1373 "parser.tab.c"
+#line 1376 "parser.tab.c"
     break;
 
   case 6: /* decl: funDecl  */
-#line 100 "parser.y"
+#line 103 "parser.y"
                           {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1379 "parser.tab.c"
+#line 1382 "parser.tab.c"
     break;
 
   case 7: /* varDecl: typeSpec varDeclList SEMI  */
-#line 103 "parser.y"
+#line 106 "parser.y"
                                             { setType((yyvsp[-1].treenode),(yyvsp[-2].expType),false); (yyval.treenode) = (yyvsp[-1].treenode);}
-#line 1385 "parser.tab.c"
+#line 1388 "parser.tab.c"
     break;
 
   case 8: /* scopedVarDecl: STATIC typeSpec varDeclList SEMI  */
-#line 106 "parser.y"
+#line 109 "parser.y"
                                                     { setType((yyvsp[-1].treenode),(yyvsp[-2].expType),true);
                                                     (yyval.treenode)=(yyvsp[-1].treenode);
                                                     }
-#line 1393 "parser.tab.c"
+#line 1396 "parser.tab.c"
     break;
 
   case 9: /* scopedVarDecl: typeSpec varDeclList SEMI  */
-#line 109 "parser.y"
+#line 112 "parser.y"
                                             {   setType((yyvsp[-1].treenode),(yyvsp[-2].expType),false);
                                                 (yyval.treenode) = (yyvsp[-1].treenode);
                                             }
-#line 1401 "parser.tab.c"
+#line 1404 "parser.tab.c"
     break;
 
   case 10: /* varDeclList: varDeclList COMMA varDeclInit  */
-#line 116 "parser.y"
-                                                  { (yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode)); }
-#line 1407 "parser.tab.c"
+#line 119 "parser.y"
+                                                  { //printf("In VarDeclList Processing\n");
+                                                  (yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode)); }
+#line 1411 "parser.tab.c"
     break;
 
   case 11: /* varDeclList: varDeclInit  */
-#line 117 "parser.y"
+#line 121 "parser.y"
                               { (yyval.treenode) = (yyvsp[0].treenode); }
-#line 1413 "parser.tab.c"
+#line 1417 "parser.tab.c"
     break;
 
   case 12: /* varDeclInit: varDeclId  */
-#line 120 "parser.y"
+#line 124 "parser.y"
                             {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1419 "parser.tab.c"
+#line 1423 "parser.tab.c"
     break;
 
   case 13: /* varDeclInit: varDeclId COLON simpleExp  */
-#line 121 "parser.y"
+#line 125 "parser.y"
                                                 {(yyval.treenode) = (yyvsp[-2].treenode);
                                                  (yyval.treenode)->child[0] = (yyvsp[0].treenode);}
-#line 1426 "parser.tab.c"
+#line 1430 "parser.tab.c"
     break;
 
   case 14: /* varDeclId: ID  */
-#line 125 "parser.y"
+#line 129 "parser.y"
                                                         {(yyval.treenode) = newDeclNode(VarK,UndefinedType,(yyvsp[0].tokenData));
                                                          (yyval.treenode)->attr.name = (yyvsp[0].tokenData)->tokenStr;
                                                          (yyval.treenode)->isArray = false;
                                                          (yyval.treenode)->attrSet = true;
 
                                                         }
-#line 1437 "parser.tab.c"
+#line 1441 "parser.tab.c"
     break;
 
   case 15: /* varDeclId: ID OPEN_BRACK NUMCONST CLOSE_BRACK  */
-#line 131 "parser.y"
+#line 135 "parser.y"
                                                         {(yyval.treenode) = newDeclNode(VarK,UndefinedType,(yyvsp[-3].tokenData));
                                                          (yyval.treenode)->attr.name = (yyvsp[-3].tokenData)->tokenStr;
                                                          (yyval.treenode)->attrSet = true;
                                                          (yyval.treenode)->isArray = true;
                                                          (yyval.treenode)->arraySize = (yyvsp[-1].tokenData)->nValue;
                                                         }
-#line 1448 "parser.tab.c"
+#line 1452 "parser.tab.c"
     break;
 
   case 16: /* typeSpec: INT  */
-#line 139 "parser.y"
+#line 143 "parser.y"
                       {(yyval.expType) = Integer;}
-#line 1454 "parser.tab.c"
+#line 1458 "parser.tab.c"
     break;
 
   case 17: /* typeSpec: BOOL  */
-#line 140 "parser.y"
+#line 144 "parser.y"
                        {(yyval.expType) = Boolean;}
-#line 1460 "parser.tab.c"
+#line 1464 "parser.tab.c"
     break;
 
   case 18: /* typeSpec: CHAR  */
-#line 141 "parser.y"
+#line 145 "parser.y"
                        {(yyval.expType) = Char;}
-#line 1466 "parser.tab.c"
+#line 1470 "parser.tab.c"
     break;
 
   case 19: /* funDecl: typeSpec ID OPEN_PAREN params CLOSE_PAREN stmt  */
-#line 145 "parser.y"
+#line 149 "parser.y"
                                                                     {(yyval.treenode) = newDeclNode(FuncK,(yyvsp[-5].expType),(yyvsp[-4].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                     (yyval.treenode)->attr.name = (yyvsp[-4].tokenData)->tokenStr;
                                                                     (yyval.treenode)->attrSet = true;                                                                      
                                                                      
                                                                     }
-#line 1476 "parser.tab.c"
+#line 1480 "parser.tab.c"
     break;
 
   case 20: /* funDecl: ID OPEN_PAREN params CLOSE_PAREN stmt  */
-#line 150 "parser.y"
+#line 154 "parser.y"
                                                                     {(yyval.treenode) = newDeclNode(FuncK,Void,(yyvsp[-4].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                     (yyval.treenode)->attr.name = (yyvsp[-4].tokenData)->tokenStr;
                                                                     (yyval.treenode)->attrSet = true;                                                                     
                                                                     }
-#line 1485 "parser.tab.c"
+#line 1489 "parser.tab.c"
     break;
 
   case 21: /* params: paramList  */
-#line 156 "parser.y"
+#line 160 "parser.y"
                             {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1491 "parser.tab.c"
+#line 1495 "parser.tab.c"
     break;
 
   case 22: /* params: %empty  */
-#line 157 "parser.y"
+#line 161 "parser.y"
                    {(yyval.treenode) = NULL;}
-#line 1497 "parser.tab.c"
+#line 1501 "parser.tab.c"
     break;
 
   case 23: /* paramList: paramList SEMI paramTypeList  */
-#line 160 "parser.y"
-                                               {(yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode));}
-#line 1503 "parser.tab.c"
+#line 164 "parser.y"
+                                               {//printf("In ParamList Processing\n");
+                                                (yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode));}
+#line 1508 "parser.tab.c"
     break;
 
   case 24: /* paramList: paramTypeList  */
-#line 161 "parser.y"
+#line 166 "parser.y"
                                 {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1509 "parser.tab.c"
+#line 1514 "parser.tab.c"
     break;
 
   case 25: /* paramTypeList: typeSpec paramIdList  */
-#line 164 "parser.y"
+#line 169 "parser.y"
                                         {setType((yyvsp[0].treenode),(yyvsp[-1].expType),false); (yyval.treenode) = (yyvsp[0].treenode);}
-#line 1515 "parser.tab.c"
+#line 1520 "parser.tab.c"
     break;
 
   case 26: /* paramIdList: paramIdList COMMA paramId  */
-#line 167 "parser.y"
-                                            {(yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode));}
-#line 1521 "parser.tab.c"
-    break;
-
-  case 27: /* paramIdList: paramId  */
-#line 168 "parser.y"
-                          {(yyval.treenode) = (yyvsp[0].treenode);}
+#line 172 "parser.y"
+                                            {//printf("In ParamIDList Processing\n");
+                                              (yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode));}
 #line 1527 "parser.tab.c"
     break;
 
+  case 27: /* paramIdList: paramId  */
+#line 174 "parser.y"
+                          {(yyval.treenode) = (yyvsp[0].treenode);}
+#line 1533 "parser.tab.c"
+    break;
+
   case 28: /* paramId: ID  */
-#line 171 "parser.y"
+#line 177 "parser.y"
                                             {(yyval.treenode) = newDeclNode(ParamK,UndefinedType,(yyvsp[0].tokenData));
                                             (yyval.treenode)->attr.name = (yyvsp[0].tokenData)->tokenStr;
                                             (yyval.treenode)->attrSet = true;
                                             (yyval.treenode)->isArray = false;                                                
                                             }
-#line 1537 "parser.tab.c"
+#line 1543 "parser.tab.c"
     break;
 
   case 29: /* paramId: ID OPEN_BRACK CLOSE_BRACK  */
-#line 176 "parser.y"
+#line 182 "parser.y"
                                             {(yyval.treenode) = newDeclNode(ParamK,UndefinedType,(yyvsp[-2].tokenData));
                                             (yyval.treenode)->attr.name = (yyvsp[-2].tokenData)->tokenStr;
                                             (yyval.treenode)->attrSet = true; 
                                             (yyval.treenode)->isArray = true;                                              
                                             }
-#line 1547 "parser.tab.c"
-    break;
-
-  case 30: /* stmt: matched  */
-#line 193 "parser.y"
-                            {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1553 "parser.tab.c"
     break;
 
-  case 31: /* stmt: unmatched  */
-#line 194 "parser.y"
+  case 30: /* stmt: matched  */
+#line 199 "parser.y"
                             {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1559 "parser.tab.c"
     break;
 
-  case 32: /* matched: expStmt  */
-#line 197 "parser.y"
-                                    {(yyval.treenode) = (yyvsp[0].treenode);}
+  case 31: /* stmt: unmatched  */
+#line 200 "parser.y"
+                            {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1565 "parser.tab.c"
     break;
 
-  case 33: /* matched: compoundStmt  */
-#line 198 "parser.y"
+  case 32: /* matched: expStmt  */
+#line 203 "parser.y"
                                     {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1571 "parser.tab.c"
     break;
 
-  case 34: /* matched: matchedSelectStmt  */
-#line 199 "parser.y"
+  case 33: /* matched: compoundStmt  */
+#line 204 "parser.y"
                                     {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1577 "parser.tab.c"
     break;
 
-  case 35: /* matched: matchedIterStmt  */
-#line 200 "parser.y"
+  case 34: /* matched: matchedSelectStmt  */
+#line 205 "parser.y"
                                     {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1583 "parser.tab.c"
     break;
 
-  case 36: /* matched: returnStmt  */
-#line 201 "parser.y"
+  case 35: /* matched: matchedIterStmt  */
+#line 206 "parser.y"
                                     {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1589 "parser.tab.c"
     break;
 
-  case 37: /* matched: breakStmt  */
-#line 202 "parser.y"
+  case 36: /* matched: returnStmt  */
+#line 207 "parser.y"
                                     {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1595 "parser.tab.c"
     break;
 
-  case 38: /* unmatched: unmatchedSelectStmt  */
-#line 205 "parser.y"
-                                        {(yyval.treenode) = (yyvsp[0].treenode);}
+  case 37: /* matched: breakStmt  */
+#line 208 "parser.y"
+                                    {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1601 "parser.tab.c"
     break;
 
-  case 39: /* unmatched: unmatchedIterStmt  */
-#line 206 "parser.y"
+  case 38: /* unmatched: unmatchedSelectStmt  */
+#line 211 "parser.y"
                                         {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1607 "parser.tab.c"
     break;
 
-  case 40: /* expStmt: exp SEMI  */
-#line 210 "parser.y"
-                           {(yyval.treenode) = (yyvsp[-1].treenode);}
+  case 39: /* unmatched: unmatchedIterStmt  */
+#line 212 "parser.y"
+                                        {(yyval.treenode) = (yyvsp[0].treenode);}
 #line 1613 "parser.tab.c"
     break;
 
-  case 41: /* expStmt: SEMI  */
-#line 211 "parser.y"
-                       {(yyval.treenode) = NULL;}
+  case 40: /* expStmt: exp SEMI  */
+#line 216 "parser.y"
+                           {(yyval.treenode) = (yyvsp[-1].treenode);}
 #line 1619 "parser.tab.c"
     break;
 
+  case 41: /* expStmt: SEMI  */
+#line 217 "parser.y"
+                       {(yyval.treenode) = NULL;}
+#line 1625 "parser.tab.c"
+    break;
+
   case 42: /* compoundStmt: OPEN_BRACE localDecls stmtList CLOSE_BRACE  */
-#line 214 "parser.y"
+#line 220 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(CompoundK,(yyvsp[-3].tokenData),(yyvsp[-2].treenode),(yyvsp[-1].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-3].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1628 "parser.tab.c"
-    break;
-
-  case 43: /* localDecls: localDecls scopedVarDecl  */
-#line 220 "parser.y"
-                                           {(yyval.treenode) = addSibling((yyvsp[-1].treenode),(yyvsp[0].treenode));}
 #line 1634 "parser.tab.c"
     break;
 
+  case 43: /* localDecls: localDecls scopedVarDecl  */
+#line 226 "parser.y"
+                                           {//printf("In Local Decls Processing\n");
+                                            (yyval.treenode) = addSibling((yyvsp[-1].treenode),(yyvsp[0].treenode));}
+#line 1641 "parser.tab.c"
+    break;
+
   case 44: /* localDecls: %empty  */
-#line 221 "parser.y"
+#line 228 "parser.y"
                   {(yyval.treenode) = NULL;}
-#line 1640 "parser.tab.c"
+#line 1647 "parser.tab.c"
     break;
 
   case 45: /* stmtList: stmtList stmt  */
-#line 224 "parser.y"
-                                        {(yyval.treenode) = addSibling((yyvsp[-1].treenode),(yyvsp[0].treenode));}
-#line 1646 "parser.tab.c"
+#line 231 "parser.y"
+                                        {//printf("In stmtList Processing\n");
+                                        if((yyvsp[0].treenode) != NULL)(yyval.treenode) = addSibling((yyvsp[-1].treenode),(yyvsp[0].treenode));else (yyval.treenode)=(yyvsp[-1].treenode);}
+#line 1654 "parser.tab.c"
     break;
 
   case 46: /* stmtList: %empty  */
-#line 225 "parser.y"
+#line 233 "parser.y"
                   {(yyval.treenode) = NULL;}
-#line 1652 "parser.tab.c"
+#line 1660 "parser.tab.c"
     break;
 
   case 47: /* matchedSelectStmt: IF simpleExp THEN matched ELSE matched  */
-#line 233 "parser.y"
+#line 241 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(IfK,(yyvsp[-5].tokenData),(yyvsp[-4].treenode),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-5].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1661 "parser.tab.c"
+#line 1669 "parser.tab.c"
     break;
 
   case 48: /* unmatchedSelectStmt: IF simpleExp THEN matched ELSE unmatched  */
-#line 239 "parser.y"
+#line 247 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(IfK,(yyvsp[-5].tokenData),(yyvsp[-4].treenode),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-5].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1670 "parser.tab.c"
+#line 1678 "parser.tab.c"
     break;
 
   case 49: /* unmatchedSelectStmt: IF simpleExp THEN stmt  */
-#line 243 "parser.y"
+#line 251 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(IfK,(yyvsp[-3].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-3].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1679 "parser.tab.c"
+#line 1687 "parser.tab.c"
     break;
 
   case 50: /* unmatchedIterStmt: WHILE simpleExp DO unmatched  */
-#line 249 "parser.y"
+#line 257 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(WhileK,(yyvsp[-3].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-3].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1688 "parser.tab.c"
+#line 1696 "parser.tab.c"
     break;
 
   case 51: /* unmatchedIterStmt: FOR ID ASS iterRange DO unmatched  */
-#line 253 "parser.y"
+#line 261 "parser.y"
                                                                 { 
                                                                   treeNode *node = newDeclNode(VarK,Integer,(yyvsp[-4].tokenData));
                                                                   node->attr.string = (yyvsp[-4].tokenData)->tokenStr;
@@ -1698,20 +1706,20 @@ yyreduce:
                                                                   (yyval.treenode)->attr.string = (yyvsp[-5].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1702 "parser.tab.c"
+#line 1710 "parser.tab.c"
     break;
 
   case 52: /* matchedIterStmt: WHILE simpleExp DO matched  */
-#line 264 "parser.y"
+#line 272 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(WhileK,(yyvsp[-3].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-3].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1711 "parser.tab.c"
+#line 1719 "parser.tab.c"
     break;
 
   case 53: /* matchedIterStmt: FOR ID ASS iterRange DO matched  */
-#line 269 "parser.y"
+#line 277 "parser.y"
                                                                 { 
                                                                   treeNode *node = newDeclNode(VarK,Integer,(yyvsp[-4].tokenData));
                                                                   node->attr.string = (yyvsp[-4].tokenData)->tokenStr;
@@ -1721,363 +1729,363 @@ yyreduce:
                                                                   (yyval.treenode)->attr.string = (yyvsp[-5].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1725 "parser.tab.c"
+#line 1733 "parser.tab.c"
     break;
 
   case 54: /* iterRange: simpleExp TO simpleExp  */
-#line 285 "parser.y"
+#line 293 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(RangeK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1734 "parser.tab.c"
+#line 1742 "parser.tab.c"
     break;
 
   case 55: /* iterRange: simpleExp TO simpleExp BY simpleExp  */
-#line 290 "parser.y"
+#line 298 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(RangeK,(yyvsp[-1].tokenData),(yyvsp[-4].treenode),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1743 "parser.tab.c"
+#line 1751 "parser.tab.c"
     break;
 
   case 56: /* returnStmt: RETURN SEMI  */
-#line 296 "parser.y"
+#line 304 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(ReturnK,(yyvsp[-1].tokenData));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1752 "parser.tab.c"
+#line 1760 "parser.tab.c"
     break;
 
   case 57: /* returnStmt: RETURN exp SEMI  */
-#line 300 "parser.y"
+#line 308 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(ReturnK,(yyvsp[-2].tokenData),(yyvsp[-1].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-2].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1761 "parser.tab.c"
+#line 1769 "parser.tab.c"
     break;
 
   case 58: /* breakStmt: BREAK SEMI  */
-#line 306 "parser.y"
+#line 314 "parser.y"
                                                                 { (yyval.treenode) = newStmtNode(BreakK,(yyvsp[-1].tokenData));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1770 "parser.tab.c"
+#line 1778 "parser.tab.c"
     break;
 
   case 59: /* exp: mutable ASS exp  */
-#line 313 "parser.y"
-                                                                { (yyval.treenode) = newExpNode(AssignK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
-                                                                  (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
-                                                                  (yyval.treenode)->attrSet = true;
-                                                                }
-#line 1779 "parser.tab.c"
-    break;
-
-  case 60: /* exp: mutable ADDASS exp  */
-#line 317 "parser.y"
-                                                                { (yyval.treenode) = newExpNode(AssignK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
-                                                                  (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
-                                                                  (yyval.treenode)->attrSet = true;
-                                                                }
-#line 1788 "parser.tab.c"
-    break;
-
-  case 61: /* exp: mutable SUBASS exp  */
 #line 321 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(AssignK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1797 "parser.tab.c"
+#line 1787 "parser.tab.c"
     break;
 
-  case 62: /* exp: mutable MULASS exp  */
+  case 60: /* exp: mutable ADDASS exp  */
 #line 325 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(AssignK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1806 "parser.tab.c"
+#line 1796 "parser.tab.c"
     break;
 
-  case 63: /* exp: mutable DIVASS exp  */
+  case 61: /* exp: mutable SUBASS exp  */
 #line 329 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(AssignK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1815 "parser.tab.c"
+#line 1805 "parser.tab.c"
+    break;
+
+  case 62: /* exp: mutable MULASS exp  */
+#line 333 "parser.y"
+                                                                { (yyval.treenode) = newExpNode(AssignK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
+                                                                  (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
+                                                                  (yyval.treenode)->attrSet = true;
+                                                                }
+#line 1814 "parser.tab.c"
+    break;
+
+  case 63: /* exp: mutable DIVASS exp  */
+#line 337 "parser.y"
+                                                                { (yyval.treenode) = newExpNode(AssignK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
+                                                                  (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
+                                                                  (yyval.treenode)->attrSet = true;
+                                                                }
+#line 1823 "parser.tab.c"
     break;
 
   case 64: /* exp: mutable INC  */
-#line 333 "parser.y"
+#line 341 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(AssignK,(yyvsp[0].tokenData),(yyvsp[-1].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[0].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1824 "parser.tab.c"
+#line 1832 "parser.tab.c"
     break;
 
   case 65: /* exp: mutable DEC  */
-#line 337 "parser.y"
+#line 345 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(AssignK,(yyvsp[0].tokenData),(yyvsp[-1].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[0].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1833 "parser.tab.c"
+#line 1841 "parser.tab.c"
     break;
 
   case 66: /* exp: simpleExp  */
-#line 341 "parser.y"
+#line 349 "parser.y"
                              {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1839 "parser.tab.c"
+#line 1847 "parser.tab.c"
     break;
 
   case 67: /* simpleExp: simpleExp OR andExp  */
-#line 344 "parser.y"
+#line 352 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1848 "parser.tab.c"
+#line 1856 "parser.tab.c"
     break;
 
   case 68: /* simpleExp: andExp  */
-#line 348 "parser.y"
+#line 356 "parser.y"
                            {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1854 "parser.tab.c"
+#line 1862 "parser.tab.c"
     break;
 
   case 69: /* andExp: andExp AND unaryRelExp  */
-#line 351 "parser.y"
+#line 359 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1863 "parser.tab.c"
+#line 1871 "parser.tab.c"
     break;
 
   case 70: /* andExp: unaryRelExp  */
-#line 355 "parser.y"
+#line 363 "parser.y"
                                 {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1869 "parser.tab.c"
+#line 1877 "parser.tab.c"
     break;
 
   case 71: /* unaryRelExp: NOT unaryRelExp  */
-#line 358 "parser.y"
+#line 366 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1878 "parser.tab.c"
+#line 1886 "parser.tab.c"
     break;
 
   case 72: /* unaryRelExp: relExp  */
-#line 362 "parser.y"
+#line 370 "parser.y"
                          {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1884 "parser.tab.c"
+#line 1892 "parser.tab.c"
     break;
 
   case 73: /* relExp: minMaxExp relOp minMaxExp  */
-#line 365 "parser.y"
+#line 373 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1893 "parser.tab.c"
+#line 1901 "parser.tab.c"
     break;
 
   case 74: /* relExp: minMaxExp  */
-#line 369 "parser.y"
+#line 377 "parser.y"
                             {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1899 "parser.tab.c"
+#line 1907 "parser.tab.c"
     break;
 
   case 75: /* relOp: LEQ  */
-#line 372 "parser.y"
+#line 380 "parser.y"
                                         {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1905 "parser.tab.c"
+#line 1913 "parser.tab.c"
     break;
 
   case 76: /* relOp: LESS  */
-#line 373 "parser.y"
+#line 381 "parser.y"
                                         {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1911 "parser.tab.c"
+#line 1919 "parser.tab.c"
     break;
 
   case 77: /* relOp: GREATER  */
-#line 374 "parser.y"
+#line 382 "parser.y"
                                         {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1917 "parser.tab.c"
+#line 1925 "parser.tab.c"
     break;
 
   case 78: /* relOp: GEQ  */
-#line 375 "parser.y"
+#line 383 "parser.y"
                                         {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1923 "parser.tab.c"
+#line 1931 "parser.tab.c"
     break;
 
   case 79: /* relOp: EQ  */
-#line 376 "parser.y"
+#line 384 "parser.y"
                                         {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1929 "parser.tab.c"
+#line 1937 "parser.tab.c"
     break;
 
   case 80: /* relOp: NEQ  */
-#line 377 "parser.y"
+#line 385 "parser.y"
                                         {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1935 "parser.tab.c"
+#line 1943 "parser.tab.c"
     break;
 
   case 81: /* minMaxExp: minMaxExp minMaxOp sumExp  */
-#line 380 "parser.y"
+#line 388 "parser.y"
                                                                  {(yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                  }
-#line 1944 "parser.tab.c"
+#line 1952 "parser.tab.c"
     break;
 
   case 82: /* minMaxExp: sumExp  */
-#line 384 "parser.y"
+#line 392 "parser.y"
                          {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1950 "parser.tab.c"
+#line 1958 "parser.tab.c"
     break;
 
   case 83: /* minMaxOp: MAX  */
-#line 387 "parser.y"
+#line 395 "parser.y"
                        {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1956 "parser.tab.c"
+#line 1964 "parser.tab.c"
     break;
 
   case 84: /* minMaxOp: MIN  */
-#line 388 "parser.y"
+#line 396 "parser.y"
                        {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1962 "parser.tab.c"
+#line 1970 "parser.tab.c"
     break;
 
   case 85: /* sumExp: sumExp sumOp mulExp  */
-#line 391 "parser.y"
+#line 399 "parser.y"
                                                                  {(yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                  }
-#line 1971 "parser.tab.c"
+#line 1979 "parser.tab.c"
     break;
 
   case 86: /* sumExp: mulExp  */
-#line 395 "parser.y"
+#line 403 "parser.y"
                            {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 1977 "parser.tab.c"
+#line 1985 "parser.tab.c"
     break;
 
   case 87: /* sumOp: PLUS  */
-#line 398 "parser.y"
+#line 406 "parser.y"
                        {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1983 "parser.tab.c"
+#line 1991 "parser.tab.c"
     break;
 
   case 88: /* sumOp: MINUS  */
-#line 399 "parser.y"
+#line 407 "parser.y"
                         {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 1989 "parser.tab.c"
+#line 1997 "parser.tab.c"
     break;
 
   case 89: /* mulExp: mulExp mulOp unaryExp  */
-#line 402 "parser.y"
+#line 410 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[-2].treenode),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 1998 "parser.tab.c"
+#line 2006 "parser.tab.c"
     break;
 
   case 90: /* mulExp: unaryExp  */
-#line 406 "parser.y"
+#line 414 "parser.y"
                            {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2004 "parser.tab.c"
+#line 2012 "parser.tab.c"
     break;
 
   case 91: /* mulOp: MULT  */
-#line 409 "parser.y"
+#line 417 "parser.y"
                        {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 2010 "parser.tab.c"
+#line 2018 "parser.tab.c"
     break;
 
   case 92: /* mulOp: DIV  */
-#line 410 "parser.y"
+#line 418 "parser.y"
                       {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 2016 "parser.tab.c"
+#line 2024 "parser.tab.c"
     break;
 
   case 93: /* mulOp: MOD  */
-#line 411 "parser.y"
+#line 419 "parser.y"
                       {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 2022 "parser.tab.c"
+#line 2030 "parser.tab.c"
     break;
 
   case 94: /* unaryExp: unaryOp unaryExp  */
-#line 414 "parser.y"
+#line 422 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(OpK,(yyvsp[-1].tokenData),(yyvsp[0].treenode));
                                                                   (yyval.treenode)->attr.string = (yyvsp[-1].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                 }
-#line 2031 "parser.tab.c"
+#line 2039 "parser.tab.c"
     break;
 
   case 95: /* unaryExp: factor  */
-#line 418 "parser.y"
+#line 426 "parser.y"
                          {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2037 "parser.tab.c"
+#line 2045 "parser.tab.c"
     break;
 
   case 96: /* unaryOp: MINUS  */
-#line 421 "parser.y"
+#line 429 "parser.y"
                         {(yyval.tokenData) = (yyvsp[0].tokenData); (yyval.tokenData)->tokenClass = CHSIGN;}
-#line 2043 "parser.tab.c"
+#line 2051 "parser.tab.c"
     break;
 
   case 97: /* unaryOp: MULT  */
-#line 422 "parser.y"
+#line 430 "parser.y"
                         {(yyval.tokenData) = (yyvsp[0].tokenData); (yyval.tokenData)->tokenClass = SIZEOF;}
-#line 2049 "parser.tab.c"
+#line 2057 "parser.tab.c"
     break;
 
   case 98: /* unaryOp: QUESTION  */
-#line 423 "parser.y"
+#line 431 "parser.y"
                            {(yyval.tokenData) = (yyvsp[0].tokenData);}
-#line 2055 "parser.tab.c"
+#line 2063 "parser.tab.c"
     break;
 
   case 99: /* factor: immutable  */
-#line 426 "parser.y"
+#line 434 "parser.y"
                             {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2061 "parser.tab.c"
+#line 2069 "parser.tab.c"
     break;
 
   case 100: /* factor: mutable  */
-#line 427 "parser.y"
+#line 435 "parser.y"
                             {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2067 "parser.tab.c"
+#line 2075 "parser.tab.c"
     break;
 
   case 101: /* mutable: ID  */
-#line 430 "parser.y"
+#line 438 "parser.y"
                                                                 { (yyval.treenode) = newExpNode(IdK,(yyvsp[0].tokenData));
                                                                   (yyval.treenode)->attr.name = (yyvsp[0].tokenData)->tokenStr;
                                                                   (yyval.treenode)->attrSet = true;
                                                                   (yyval.treenode)->isArray = false;  
                                                                 }
-#line 2077 "parser.tab.c"
+#line 2085 "parser.tab.c"
     break;
 
   case 102: /* mutable: ID OPEN_BRACK exp CLOSE_BRACK  */
-#line 435 "parser.y"
+#line 443 "parser.y"
                                                                 { 
                                                                   TreeNode * node = newExpNode(IdK,(yyvsp[-3].tokenData)); 
                                                                   node->attr.name = (yyvsp[-3].tokenData)->tokenStr;
@@ -2088,84 +2096,85 @@ yyreduce:
                                                                   (yyval.treenode)->attrSet = true;
                                                                   (yyval.treenode)->isArray = true;
                                                                 }
-#line 2092 "parser.tab.c"
+#line 2100 "parser.tab.c"
     break;
 
   case 103: /* immutable: OPEN_PAREN exp CLOSE_PAREN  */
-#line 447 "parser.y"
+#line 455 "parser.y"
                                               { (yyval.treenode) = (yyvsp[-1].treenode);}
-#line 2098 "parser.tab.c"
+#line 2106 "parser.tab.c"
     break;
 
   case 104: /* immutable: call  */
-#line 448 "parser.y"
+#line 456 "parser.y"
                         {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2104 "parser.tab.c"
+#line 2112 "parser.tab.c"
     break;
 
   case 105: /* immutable: constant  */
-#line 449 "parser.y"
+#line 457 "parser.y"
                            {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2110 "parser.tab.c"
+#line 2118 "parser.tab.c"
     break;
 
   case 106: /* call: ID OPEN_PAREN args CLOSE_PAREN  */
-#line 452 "parser.y"
+#line 460 "parser.y"
                                                     { (yyval.treenode) = newExpNode(CallK,(yyvsp[-3].tokenData),(yyvsp[-1].treenode));
                                                       (yyval.treenode)->attr.name = (yyvsp[-3].tokenData)->tokenStr;
                                                       (yyval.treenode)->attrSet = true;
                                                     }
-#line 2119 "parser.tab.c"
+#line 2127 "parser.tab.c"
     break;
 
   case 107: /* args: argList  */
-#line 458 "parser.y"
+#line 466 "parser.y"
                             {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2125 "parser.tab.c"
+#line 2133 "parser.tab.c"
     break;
 
   case 108: /* args: %empty  */
-#line 459 "parser.y"
+#line 467 "parser.y"
                   {(yyval.treenode) = NULL;}
-#line 2131 "parser.tab.c"
+#line 2139 "parser.tab.c"
     break;
 
   case 109: /* argList: argList COMMA exp  */
-#line 462 "parser.y"
-                                        {(yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode));}
-#line 2137 "parser.tab.c"
+#line 470 "parser.y"
+                                        {//printf("In ArgList Processing\n");
+                                        (yyval.treenode) = addSibling((yyvsp[-2].treenode),(yyvsp[0].treenode));}
+#line 2146 "parser.tab.c"
     break;
 
   case 110: /* argList: exp  */
-#line 463 "parser.y"
+#line 472 "parser.y"
                                         {(yyval.treenode) = (yyvsp[0].treenode);}
-#line 2143 "parser.tab.c"
+#line 2152 "parser.tab.c"
     break;
 
   case 111: /* constant: NUMCONST  */
-#line 466 "parser.y"
+#line 475 "parser.y"
                                 { (yyval.treenode) = newExpNode(ConstantK,(yyvsp[0].tokenData));
                                   (yyval.treenode)->attr.value = (yyvsp[0].tokenData)->nValue;
                                   (yyval.treenode)->attrSet = true;
                                   (yyval.treenode)->expType = Integer;
                                   (yyval.treenode)->unionType = value;
                                 }
-#line 2154 "parser.tab.c"
+#line 2163 "parser.tab.c"
     break;
 
   case 112: /* constant: CHARCONST  */
-#line 472 "parser.y"
+#line 481 "parser.y"
                                 { (yyval.treenode) = newExpNode(ConstantK,(yyvsp[0].tokenData));
                                   (yyval.treenode)->attr.cvalue = (yyvsp[0].tokenData)->cValue;
                                   (yyval.treenode)->attrSet = true;
                                   (yyval.treenode)->expType = Char;
                                   (yyval.treenode)->unionType = cvalue;
                                 }
-#line 2165 "parser.tab.c"
+#line 2174 "parser.tab.c"
     break;
 
   case 113: /* constant: STRINGCONST  */
-#line 478 "parser.y"
+#line 487 "parser.y"
                                 { (yyval.treenode) = newExpNode(ConstantK,(yyvsp[0].tokenData));
                                   (yyval.treenode)->attr.string = (yyvsp[0].tokenData)->sValue; /*Shallow Cop*/
                                   (yyval.treenode)->attrSet = true;
@@ -2173,33 +2182,33 @@ yyreduce:
                                   (yyval.treenode)->isArray = true; 
                                   (yyval.treenode)->unionType = string;
                                 }
-#line 2177 "parser.tab.c"
+#line 2186 "parser.tab.c"
     break;
 
   case 114: /* constant: TRUE  */
-#line 485 "parser.y"
+#line 494 "parser.y"
                                 { (yyval.treenode) = newExpNode(ConstantK,(yyvsp[0].tokenData));
                                   (yyval.treenode)->attr.value = (yyvsp[0].tokenData)->nValue;
                                   (yyval.treenode)->attrSet = true;
                                   (yyval.treenode)->expType = Boolean; 
                                   (yyval.treenode)->unionType = value;
                                 }
-#line 2188 "parser.tab.c"
+#line 2197 "parser.tab.c"
     break;
 
   case 115: /* constant: FALSE  */
-#line 491 "parser.y"
+#line 500 "parser.y"
                                 { (yyval.treenode) = newExpNode(ConstantK,(yyvsp[0].tokenData));
                                   (yyval.treenode)->attr.value = (yyvsp[0].tokenData)->nValue;
                                   (yyval.treenode)->attrSet = true;
                                   (yyval.treenode)->expType = Boolean;
                                   (yyval.treenode)->unionType = value; 
                                 }
-#line 2199 "parser.tab.c"
+#line 2208 "parser.tab.c"
     break;
 
 
-#line 2203 "parser.tab.c"
+#line 2212 "parser.tab.c"
 
       default: break;
     }
@@ -2393,7 +2402,7 @@ yyreturn:
   return yyresult;
 }
 
-#line 588 "parser.y"
+#line 597 "parser.y"
 
 extern int yydebug;
 
@@ -2458,23 +2467,30 @@ int main(int argc, char *argv[])
 
     // do the parsing
     yyparse();
-
     SymbolTable *symTab; 
     symTab = new SymbolTable();
     if(printflag)
     {
       checkTree(symTab,syntaxTree,0,false,NULL);
-
-      if(symTab->lookupGlobal(std::string("main")) == NULL)
+      treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
+      //Child 0 is our params. This means main() child 0 is NULL and main(params a) child 0 is non null
+      //We also need to make sure its a function
+      if( (tmpLookupNode == NULL || tmpLookupNode->child[0] != NULL) || !tmpLookupNode->isFunc)
       {
+        
         printf("ERROR(LINKER): A function named 'main()' must be defined.\n");
         NUM_ERRORS++;
       }
 
+        if(NUM_ERRORS == 0)
+          printTypedTree(syntaxTree,0);
+
       printf("Number of warnings: %d\n",NUM_WARNINGS);
       printf("Number of errors: %d\n",NUM_ERRORS);
 
-      //printTree(syntaxTree,0);
+
+
+      
 
       
 

@@ -1,3 +1,5 @@
+====================================
+FILE: mixedControl3.c-
 WARNING(9): The variable 'x' seems not to be used.
 WARNING(7): The variable 'x' seems not to be used.
 WARNING(14): The variable 'x' seems not to be used.

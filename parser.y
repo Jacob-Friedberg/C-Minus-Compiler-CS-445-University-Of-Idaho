@@ -92,7 +92,10 @@ TreeNode *syntaxTree;
 program         : declList {syntaxTree = $1;}
                 ;
 
-declList        : declList decl  {$$ = addSibling($1,$2);}            
+declList        : declList decl  { //printf("In DeclList Processing\n");
+                                   $$ = addSibling($1,$2);
+                                   //printf("OUT OF DECLLIST PROCESSING\n");
+                                   }            
                 | decl {$$ = $1;}
                 ;
 
@@ -113,7 +116,8 @@ scopedVarDecl   : STATIC typeSpec varDeclList SEMI  { setType($3,$2,true);
                                               ; 
                 ;
 
-varDeclList     : varDeclList COMMA varDeclInit   { $$ = addSibling($1,$3); }
+varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Processing\n");
+                                                  $$ = addSibling($1,$3); }
                 | varDeclInit { $$ = $1; }
                 ;
 
@@ -157,14 +161,16 @@ params          : paramList {$$ = $1;}
                 |  {$$ = NULL;} /*EMPTY*/
                 ;
 
-paramList       : paramList SEMI paramTypeList {$$ = addSibling($1,$3);}
+paramList       : paramList SEMI paramTypeList {//printf("In ParamList Processing\n");
+                                                $$ = addSibling($1,$3);}
                 | paramTypeList {$$ = $1;}
                 ;
 
 paramTypeList   : typeSpec paramIdList  {setType($2,$1,false); $$ = $2;}
                 ;
 
-paramIdList     : paramIdList COMMA paramId {$$ = addSibling($1,$3);}
+paramIdList     : paramIdList COMMA paramId {//printf("In ParamIDList Processing\n");
+                                              $$ = addSibling($1,$3);}
                 | paramId {$$ = $1;}
                 ;
 
@@ -217,11 +223,13 @@ compoundStmt    : OPEN_BRACE localDecls stmtList CLOSE_BRACE    { $$ = newStmtNo
                                                                 }
                 ;
 
-localDecls      : localDecls scopedVarDecl {$$ = addSibling($1,$2);}
+localDecls      : localDecls scopedVarDecl {//printf("In Local Decls Processing\n");
+                                            $$ = addSibling($1,$2);}
                 | {$$ = NULL;}/*EMPTY*/
                 ;
 
-stmtList        : stmtList stmt         {$$ = addSibling($1,$2);}
+stmtList        : stmtList stmt         {//printf("In stmtList Processing\n");
+                                        if($2 != NULL)$$ = addSibling($1,$2);else $$=$1;}
                 | {$$ = NULL;} /*EMPTY*/
                 ;
 /*
@@ -459,7 +467,8 @@ args            : argList   {$$ = $1;}
                 | {$$ = NULL;}/*EMPTY*/
                 ;
 
-argList         : argList COMMA exp     {$$ = addSibling($1,$3);}
+argList         : argList COMMA exp     {//printf("In ArgList Processing\n");
+                                        $$ = addSibling($1,$3);}
                 | exp                   {$$ = $1;}
                 ;
 
@@ -649,23 +658,30 @@ int main(int argc, char *argv[])
 
     // do the parsing
     yyparse();
-
     SymbolTable *symTab; 
     symTab = new SymbolTable();
     if(printflag)
     {
       checkTree(symTab,syntaxTree,0,false,NULL);
-
-      if(symTab->lookupGlobal(std::string("main")) == NULL)
+      treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
+      //Child 0 is our params. This means main() child 0 is NULL and main(params a) child 0 is non null
+      //We also need to make sure its a function
+      if( (tmpLookupNode == NULL || tmpLookupNode->child[0] != NULL) || !tmpLookupNode->isFunc)
       {
+        
         printf("ERROR(LINKER): A function named 'main()' must be defined.\n");
         NUM_ERRORS++;
       }
 
+        if(NUM_ERRORS == 0)
+          printTypedTree(syntaxTree,0);
+
       printf("Number of warnings: %d\n",NUM_WARNINGS);
       printf("Number of errors: %d\n",NUM_ERRORS);
 
-      //printTree(syntaxTree,0);
+
+
+      
 
       
 
