@@ -86,7 +86,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
     {
         node->parent = parent;
         convertExpTypeToString(node->expType, typing);
-
+        
         //Refactored switch
         //Process statements
         if (node->nodekind == StmtK)
