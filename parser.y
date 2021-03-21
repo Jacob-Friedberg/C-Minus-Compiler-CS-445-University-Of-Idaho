@@ -7,6 +7,9 @@
 #include "scanType.h"
 #include "Tree.h"
 #include "ourgetopt.h"
+#include "symbolTable.h"
+#include "semantic.h"
+
 
 
 
@@ -57,7 +60,7 @@ TreeNode *syntaxTree;
 %token <tokenData> COLON EQ DIV MULT MOD ADDASS ASS
 %token <tokenData> OPEN_BRACK CLOSE_BRACK DEC INC PLUS NEQ
 %token <tokenData> MIN MAX QUESTION SUBASS MULASS DIVASS
-%token <tokenData> MINUS
+%token <tokenData> MINUS CHSIGN SIZEOF
 
 
 /*types are our nonTerminals. */
@@ -89,7 +92,10 @@ TreeNode *syntaxTree;
 program         : declList {syntaxTree = $1;}
                 ;
 
-declList        : declList decl  {$$ = addSibling($1,$2);}            
+declList        : declList decl  { //printf("In DeclList Processing\n");
+                                   $$ = addSibling($1,$2);
+                                   //printf("OUT OF DECLLIST PROCESSING\n");
+                                   }            
                 | decl {$$ = $1;}
                 ;
 
@@ -110,7 +116,8 @@ scopedVarDecl   : STATIC typeSpec varDeclList SEMI  { setType($3,$2,true);
                                               ; 
                 ;
 
-varDeclList     : varDeclList COMMA varDeclInit   { $$ = addSibling($1,$3); }
+varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Processing\n");
+                                                  $$ = addSibling($1,$3); }
                 | varDeclInit { $$ = $1; }
                 ;
 
@@ -121,7 +128,9 @@ varDeclInit     : varDeclId {$$ = $1;}
 
 varDeclId       : ID                                    {$$ = newDeclNode(VarK,UndefinedType,$1);
                                                          $$->attr.name = $1->tokenStr;
+                                                         $$->isArray = false;
                                                          $$->attrSet = true;
+
                                                         }
                 | ID OPEN_BRACK NUMCONST CLOSE_BRACK    {$$ = newDeclNode(VarK,UndefinedType,$1);
                                                          $$->attr.name = $1->tokenStr;
@@ -152,20 +161,23 @@ params          : paramList {$$ = $1;}
                 |  {$$ = NULL;} /*EMPTY*/
                 ;
 
-paramList       : paramList SEMI paramTypeList {$$ = addSibling($1,$3);}
+paramList       : paramList SEMI paramTypeList {//printf("In ParamList Processing\n");
+                                                $$ = addSibling($1,$3);}
                 | paramTypeList {$$ = $1;}
                 ;
 
 paramTypeList   : typeSpec paramIdList  {setType($2,$1,false); $$ = $2;}
                 ;
 
-paramIdList     : paramIdList COMMA paramId {$$ = addSibling($1,$3);}
+paramIdList     : paramIdList COMMA paramId {//printf("In ParamIDList Processing\n");
+                                              $$ = addSibling($1,$3);}
                 | paramId {$$ = $1;}
                 ;
 
 paramId         : ID                        {$$ = newDeclNode(ParamK,UndefinedType,$1);
                                             $$->attr.name = $1->tokenStr;
-                                            $$->attrSet = true;                                               
+                                            $$->attrSet = true;
+                                            $$->isArray = false;                                                
                                             }
                 | ID OPEN_BRACK CLOSE_BRACK {$$ = newDeclNode(ParamK,UndefinedType,$1);
                                             $$->attr.name = $1->tokenStr;
@@ -211,11 +223,13 @@ compoundStmt    : OPEN_BRACE localDecls stmtList CLOSE_BRACE    { $$ = newStmtNo
                                                                 }
                 ;
 
-localDecls      : localDecls scopedVarDecl {$$ = addSibling($1,$2);}
+localDecls      : localDecls scopedVarDecl {//printf("In Local Decls Processing\n");
+                                            $$ = addSibling($1,$2);}
                 | {$$ = NULL;}/*EMPTY*/
                 ;
 
-stmtList        : stmtList stmt         {$$ = addSibling($1,$2);}
+stmtList        : stmtList stmt         {//printf("In stmtList Processing\n");
+                                        if($2 != NULL)$$ = addSibling($1,$2);else $$=$1;}
                 | {$$ = NULL;} /*EMPTY*/
                 ;
 /*
@@ -336,21 +350,21 @@ exp             : mutable ASS exp                               { $$ = newExpNod
                 ;
 
 simpleExp       : simpleExp OR andExp                           { $$ = newExpNode(OpK,$2,$1,$3);
-                                                                  $$->attr.string = toUpperString($2->tokenStr);
+                                                                  $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
                 | andExp   {$$ = $1;}
                 ;
 
 andExp          : andExp AND unaryRelExp                        { $$ = newExpNode(OpK,$2,$1,$3);
-                                                                  $$->attr.string = toUpperString($2->tokenStr);
+                                                                  $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
                 | unaryRelExp   {$$ = $1;}
                 ;
                 
 unaryRelExp     : NOT unaryRelExp                               { $$ = newExpNode(OpK,$1,$2);
-                                                                  $$->attr.string = toUpperString($1->tokenStr);
+                                                                  $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
                 | relExp {$$ = $1;}
@@ -412,8 +426,8 @@ unaryExp        : unaryOp unaryExp                              { $$ = newExpNod
                 | factor {$$ = $1;}
                 ;
 
-unaryOp         : MINUS {$$ = $1; strcpy($$->tokenStr,"CHSIGN");}
-                | MULT  {$$ = $1; strcpy($$->tokenStr,"SIZEOF");}
+unaryOp         : MINUS {$$ = $1; $$->tokenClass = CHSIGN;}
+                | MULT  {$$ = $1; $$->tokenClass = SIZEOF;}
                 | QUESTION {$$ = $1;}
                 ;
 
@@ -424,11 +438,13 @@ factor          : immutable {$$ = $1;}
 mutable         : ID                                            { $$ = newExpNode(IdK,$1);
                                                                   $$->attr.name = $1->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  $$->isArray = false;  
                                                                 }
                 | ID OPEN_BRACK exp CLOSE_BRACK                 { 
                                                                   TreeNode * node = newExpNode(IdK,$1); 
                                                                   node->attr.name = $1->tokenStr;
                                                                   node->attrSet = true;
+                                                                  node->isArray = true;
                                                                   $$ = newExpNode(OpK,$2,node,$3);
                                                                   $$->attr.name = $2->tokenStr;
                                                                   $$->attrSet = true;
@@ -451,7 +467,8 @@ args            : argList   {$$ = $1;}
                 | {$$ = NULL;}/*EMPTY*/
                 ;
 
-argList         : argList COMMA exp     {$$ = addSibling($1,$3);}
+argList         : argList COMMA exp     {//printf("In ArgList Processing\n");
+                                        $$ = addSibling($1,$3);}
                 | exp                   {$$ = $1;}
                 ;
 
@@ -459,27 +476,32 @@ constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
                                   $$->attrSet = true;
                                   $$->expType = Integer;
+                                  $$->unionType = value;
                                 }
                 | CHARCONST     { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.cvalue = $1->cValue;
                                   $$->attrSet = true;
-                                  $$->expType = Char; 
+                                  $$->expType = Char;
+                                  $$->unionType = cvalue;
                                 }
                 | STRINGCONST   { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.string = $1->sValue; /*Shallow Cop*/
                                   $$->attrSet = true;
                                   $$->expType = Char;
                                   $$->isArray = true; 
+                                  $$->unionType = string;
                                 }
                 | TRUE          { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
                                   $$->attrSet = true;
                                   $$->expType = Boolean; 
+                                  $$->unionType = value;
                                 }
                 | FALSE         { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
                                   $$->attrSet = true;
-                                  $$->expType = Boolean; 
+                                  $$->expType = Boolean;
+                                  $$->unionType = value; 
                                 }
                 ;
 
@@ -574,16 +596,21 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
 */
 %%
 extern int yydebug;
+
+
+
 int main(int argc, char *argv[])
 {
     char c;
     bool printflag = false;
     bool errorflag = false;
     extern int optind;
+    extern int NUM_WARNINGS;
+    extern int NUM_ERRORS;
     while(1)
     {
         //Picking off the options we want. p
-        while((c = ourGetopt(argc,argv,(char*)"pd")) != -1)
+        while((c = ourGetopt(argc,argv,(char*)"Ppd")) != -1)
         {
             switch(c)
             {
@@ -591,6 +618,9 @@ int main(int argc, char *argv[])
                     errorflag = true;
                     break;
                 case 'p':
+                    printflag = true;
+                    break;
+                case 'P':
                     printflag = true;
                     break;
                 default:
@@ -608,7 +638,11 @@ int main(int argc, char *argv[])
             }
             else {
                 // failed to open file
-                printf("ERROR: failed to open \'%s\'\n", argv[optind]);
+                printf("ERROR(ARGLIST): source file \"%s\" could not be opened.\n", argv[optind]);
+                NUM_ERRORS++;
+                printf("Number of warnings: %d\n",NUM_WARNINGS);
+                printf("Number of errors: %d\n",NUM_ERRORS);
+
                 exit(1);
             }
             optind++;
@@ -624,8 +658,34 @@ int main(int argc, char *argv[])
 
     // do the parsing
     yyparse();
-
+    SymbolTable *symTab; 
+    symTab = new SymbolTable();
     if(printflag)
-        printTree(syntaxTree,0);
+    {
+      checkTree2(symTab,syntaxTree,false,NULL);
+      treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
+      //Child 0 is our params. This means main() child 0 is NULL and main(params a) child 0 is non null
+      //We also need to make sure its a function
+      if( (tmpLookupNode == NULL || tmpLookupNode->child[0] != NULL) || !tmpLookupNode->isFunc)
+      {
+        
+        printf("ERROR(LINKER): A function named 'main()' must be defined.\n");
+        NUM_ERRORS++;
+      }
+
+        if(NUM_ERRORS == 0)
+          printTypedTree(syntaxTree,0);
+
+      printf("Number of warnings: %d\n",NUM_WARNINGS);
+      printf("Number of errors: %d\n",NUM_ERRORS);
+
+
+
+      
+
+      
+
+    }
     return 0;
 }
+
