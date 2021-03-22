@@ -16,7 +16,8 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->child[2] = c2;
     treeNode->sibling = NULL;
 
-    treeNode->lineno = token->lineNum;
+    if (token != NULL)
+        treeNode->lineno = token->lineNum;
 
     treeNode->nodekind = DeclK;
 
@@ -25,6 +26,10 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->expType = type;
 
     treeNode->isFunc = false;
+    treeNode->isParam = false;
+    treeNode->numParams = 0;
+    treeNode->isUsed = false;
+    treeNode->isIo = false;
 
     treeNode->attrSet = false;
 
@@ -40,7 +45,8 @@ TreeNode *newStmtNode(StmtKind kind, TokenData *token, TreeNode *c0, TreeNode *c
     treeNode->child[2] = c2;
     treeNode->sibling = NULL;
 
-    treeNode->lineno = token->lineNum;
+    if (token != NULL)
+        treeNode->lineno = token->lineNum;
 
     treeNode->nodekind = StmtK;
 
@@ -49,6 +55,10 @@ TreeNode *newStmtNode(StmtKind kind, TokenData *token, TreeNode *c0, TreeNode *c
     treeNode->isRangeKBy = false;
     treeNode->expType = UndefinedType;
     treeNode->isFunc = false;
+    treeNode->isParam = false;
+    treeNode->numParams = 0;
+    treeNode->isUsed = false;
+    treeNode->isIo = false;
 
     treeNode->attrSet = false;
 
@@ -63,12 +73,17 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
     treeNode->child[2] = c2;
     treeNode->sibling = NULL;
 
-    treeNode->lineno = token->lineNum;
+    if (token != NULL)
+        treeNode->lineno = token->lineNum;
 
     treeNode->nodekind = ExpK;
 
     treeNode->subkind.exp = kind;
     treeNode->isFunc = false;
+    treeNode->isParam = false;
+    treeNode->numParams = 0;
+    treeNode->isUsed = false;
+    treeNode->isIo = false;
     treeNode->expType = UndefinedType;
 
     treeNode->attrSet = false;
@@ -77,11 +92,13 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
 
     if (kind == OpK)
     {
-        treeNode->op = token->tokenClass;
+        if (token != NULL)
+            treeNode->op = token->tokenClass;
         treeNode->isOp = true;
     }
     if (kind == AssignK)
-        treeNode->op = token->tokenClass;
+        if (token != NULL)
+            treeNode->op = token->tokenClass;
 
     return treeNode;
 }

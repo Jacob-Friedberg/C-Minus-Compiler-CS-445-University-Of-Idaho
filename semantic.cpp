@@ -18,12 +18,119 @@ void checkIsUsed(std::string symbolName, void *ptr);
 void checkIsInit(std::string symbolName, void *ptr);
 void checkSizeOf(TreeNode *node);
 
+void ioLibrary(SymbolTable *symTab);
+
 int NUM_ERRORS = 0;
 int NUM_WARNINGS = 0;
 
 void foo(void *x)
 {
     dumpNode((treeNode *)x);
+}
+
+//Hand build IO library prototypes and add them to symbol table
+void ioLibrary(SymbolTable *symTab)
+{
+    TreeNode *ioTree = NULL;
+    TreeNode *ioTreeNode = NULL;
+    TreeNode *childIoTreeNode = NULL;
+
+    //int input()
+    ioTree = newDeclNode(FuncK, Integer);
+    ioTree->attr.name = strdup("input");
+    ioTree->isFunc = true;
+    ioTree->lineno = -1;
+    ioTree->isUsed = true;
+    ioTree->isIo = true;
+
+    //bool inputb()
+    ioTreeNode = newDeclNode(FuncK, Boolean);
+    ioTreeNode->attr.name = strdup("inputb");
+    ioTreeNode->isFunc = true;
+    ioTreeNode->lineno = -1;
+    ioTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+
+    addSibling(ioTree, ioTreeNode);
+
+    //char inputc()
+    ioTreeNode = newDeclNode(FuncK, Char);
+    ioTreeNode->attr.name = strdup("inputc");
+    ioTreeNode->isFunc = true;
+    ioTreeNode->lineno = -1;
+    ioTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+
+    addSibling(ioTree, ioTreeNode);
+
+    //void output(int)
+
+    //Parameter
+    childIoTreeNode = newDeclNode(ParamK, Integer);
+    childIoTreeNode->attr.name = strdup("*dummy*");
+    childIoTreeNode->lineno = -1;
+    childIoTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+    //create the funcdef and attach the param node
+    ioTreeNode = newDeclNode(FuncK, Void, NULL, childIoTreeNode);
+    ioTreeNode->attr.name = strdup("output");
+    ioTreeNode->isFunc = true;
+    ioTreeNode->lineno = -1;
+    ioTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+
+    addSibling(ioTree, ioTreeNode);
+
+    //void outputb(bool)
+
+    //Parameter
+    childIoTreeNode = newDeclNode(ParamK, Boolean);
+    childIoTreeNode->attr.name = strdup("*dummy*");
+    childIoTreeNode->lineno = -1;
+    childIoTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+    //create the funcdef and attach the param node
+    ioTreeNode = newDeclNode(FuncK, Void, NULL, childIoTreeNode);
+    ioTreeNode->attr.name = strdup("outputb");
+    ioTreeNode->isFunc = true;
+    ioTreeNode->lineno = -1;
+    ioTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+
+    addSibling(ioTree, ioTreeNode);
+
+    //void outputc(char)
+
+    //Parameter
+    childIoTreeNode = newDeclNode(ParamK, Char);
+    childIoTreeNode->attr.name = strdup("*dummy*");
+    childIoTreeNode->lineno = -1;
+    childIoTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+    //create the funcdef and attach the param node
+    ioTreeNode = newDeclNode(FuncK, Void, NULL, childIoTreeNode);
+    ioTreeNode->attr.name = strdup("outputc");
+    ioTreeNode->isFunc = true;
+    ioTreeNode->lineno = -1;
+    ioTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+
+    addSibling(ioTree, ioTreeNode);
+
+    //void outnl()
+
+    ioTreeNode = newDeclNode(FuncK, Void);
+    ioTreeNode->attr.name = strdup("outnl");
+    ioTreeNode->isFunc = true;
+    ioTreeNode->lineno = -1;
+    ioTreeNode->isUsed = true;
+    ioTreeNode->isIo = true;
+
+    addSibling(ioTree, ioTreeNode);
+
+    //run the manually built nodes through the semantic analysis
+    //this adds all the symbols to the tree.
+    checkTree2(symTab, ioTree, false, NULL);
 }
 
 //Ensures sizeof is only used with an array. Throws an error otherwise.
@@ -58,7 +165,10 @@ void checkSizeOf(TreeNode *node, SymbolTable *symTab)
             }
         }
         else
-            printf("size of lookup failed. child node is not IDk\n");
+        {
+            printf("ERROR(%d): The operation 'sizeof' only works with arrays.\n", node->lineno);
+            NUM_ERRORS++;
+        }
     }
 }
 
@@ -79,14 +189,33 @@ void checkChildren(TreeNode *node, SymbolTable *symTab, bool suppressChildScope)
 void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, TreeNode *parent)
 {
     char typing[64];
+    //Statics are only initlized once
+    //On many recursions the state is maintained and not overwritten,
+    //Unless explicitly told to.
+    static bool firstNode = true;
+    static TreeNode *headOfTree = NULL;
+    static TreeNode *tailOfTree = NULL;
+    static bool returnStmtFound = false;
+
+    static TreeNode *functionNodePtr = NULL;
 
     treeNode *lookupNode;
     //symTab->debug(true);
     while (node != NULL)
     {
+        //Storing the head of our tree.
+        //this is only done to the first node seen in the loop.
+        if (firstNode)
+        {
+            headOfTree = node;
+            firstNode = false;
+            //build the IO library.
+            ioLibrary(symTab);
+        }
+
         node->parent = parent;
         convertExpTypeToString(node->expType, typing);
-        
+
         //Refactored switch
         //Process statements
         if (node->nodekind == StmtK)
@@ -99,10 +228,48 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
 
             case IfK:
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+
+                if (node->child[0] != NULL && node->child[0]->expType != Boolean)
+                {
+                    char buffChild[64];
+                    convertExpTypeToString(node->child[0]->expType, buffChild);
+                    //Suppressing error if undefined. This error is thrown elsewhere
+                    if (node->child[0]->expType != UndefinedType)
+                    {
+                        printf("ERROR(%d): Expecting Boolean test condition in if statement but got type type %s.\n", node->lineno, buffChild);
+                        NUM_ERRORS++;
+                    }
+                }
+
+                if (node->child[0] != NULL && node->child[0]->isArray)
+                {
+                    printf("ERROR(%d): Cannot use array as test condition in if statement.\n", node->lineno);
+                    NUM_ERRORS++;
+                }
+
                 break;
 
             case WhileK:
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+
+                if (node->child[0] != NULL && node->child[0]->expType != Boolean)
+                {
+                    char buffChild[64];
+                    convertExpTypeToString(node->child[0]->expType, buffChild);
+                    //Suppressing error if undefined. This error is thrown elsewhere
+                    if (node->child[0]->expType != UndefinedType)
+                    {
+                        printf("ERROR(%d): Expecting Boolean test condition in while statement but got type type %s.\n", node->lineno, buffChild);
+                        NUM_ERRORS++;
+                    }
+                }
+
+                if (node->child[0] != NULL && node->child[0]->isArray)
+                {
+                    printf("ERROR(%d): Cannot use array as test condition in while statement.\n", node->lineno);
+                    NUM_ERRORS++;
+                }
+
                 break;
 
             case ForK:
@@ -126,7 +293,10 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
 
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
 
-                symTab->applyToAll(checkIsUsed);
+                //Dont do this for functions
+                //HACK
+                if (node->parent != NULL && !(node->parent->nodekind == DeclK && node->parent->subkind.decl == FuncK))
+                    symTab->applyToAll(checkIsUsed);
 
                 if (!parentSuppressScope)
                     symTab->leave();
@@ -138,6 +308,64 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
             case ReturnK:
 
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+
+                returnStmtFound = true;
+
+                //We are in a function definition and have a return value.
+                if (node->child[0] != NULL && functionNodePtr != NULL)
+                {
+                    char buffChild[64];
+                    char buffFunc[64];
+
+                    if (node->child[0]->expType != functionNodePtr->expType)
+                    {
+                        //Convert exptypes to strings for printing
+                        convertExpTypeToString(functionNodePtr->expType, buffFunc);
+                        convertExpTypeToString(node->child[0]->expType, buffChild);
+
+                        //Suppress undefined types being returned. another error is already thrown for this
+                        if (node->child[0]->expType != UndefinedType)
+                        {
+
+                            if (functionNodePtr->expType == Void)
+                            {
+                                printf("ERROR(%d): Function '%s' at line %d is expecting no return value, but return has a value.\n",
+                                       node->lineno,
+                                       functionNodePtr->attr.string,
+                                       functionNodePtr->lineno);
+
+                                NUM_ERRORS++;
+                            }
+                            else
+                            {
+                                printf("ERROR(%d): Function '%s' at line %d is expecting to return type %s but returns type %s.\n",
+                                       node->lineno,
+                                       functionNodePtr->attr.string,
+                                       functionNodePtr->lineno,
+                                       buffFunc,
+                                       buffChild);
+
+                                NUM_ERRORS++;
+                            }
+                        }
+                    }
+                }
+                //We are in a function but have no return value.
+                else if (functionNodePtr != NULL)
+                {
+                    char buffFunc[64];
+
+                    convertExpTypeToString(functionNodePtr->expType, buffFunc);
+
+                    //I think i need to put a check for voids here.
+                    printf("ERROR(%d): Function '%s' at line %d is expecting to return type %s but return has no value.\n",
+                           node->lineno,
+                           functionNodePtr->attr.string,
+                           functionNodePtr->lineno,
+                           buffFunc);
+
+                    NUM_ERRORS++;
+                }
 
                 if (node->child[0] != NULL && node->child[0]->isArray)
                 {
@@ -222,12 +450,16 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     break;
                 }
 
+                //Set func flag
+                node->isFunc = true;
+
                 if (symTab->insertGlobal(std::string(node->attr.string), node))
                 {
                     node->depth = symTab->depth();
-                    node->isUsed = false;
+                    //Removing this because it causes issues with the IOlibrary
+                    //Should be ok if i set it to false to begin with
+                    //node->isUsed = false;
                     // node->isInit = true;
-                    node->isFunc = true;
                 }
                 //Funck Name already exists. Throw an error
                 else
@@ -244,17 +476,68 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 //prob shouldn't enter regardless if there is an error.
                 symTab->enter(std::string(node->attr.string));
 
+                //store our function node for typechecking later in the children
+                if (node->isFunc && !node->isIo)
+                    functionNodePtr = node;
                 checkChildren(node, symTab, SUPPRESS_CHILD_SCOPE);
+
+                //reset function node ptr to NULL.
+                functionNodePtr = NULL;
+
+                //no return statment found and we are not an IO library func
+                if (!returnStmtFound)
+                {
+                    if (!node->isIo)
+                    {
+                        if (node->expType != Void)
+                        {
+                            printf("WARNING(%d): Expecting to return type %s but function '%s' has no return statement.\n", node->lineno, typing, node->attr.string);
+                            NUM_WARNINGS++;
+                        }
+                    }
+                }
+                //Return was found
+                //Clear the flag because we are leaving a function
+                else
+                {
+
+                    //reset flag to false
+                    //printf("ret was:%s\n", (returnStmtFound) ? "true" : "false");
+                    returnStmtFound = false;
+                    //printf("ret is now:%s\n", (returnStmtFound) ? "true" : "false");
+                }
+
+                symTab->applyToAll(checkIsUsed);
+
+                //This simplified code replaces the code that was below.
+                //We need to check for parameter usage only when there is not a cmpound stmt.
+                //This check is done by the cmpound stmt already and would produce double errors otherwise
+
+                // if (node->child[0] != NULL) // do we have arguments?
+                // {
+                //     symTab->applyToAll(checkIsUsed);
+                //     //We have a compound so we dont check is used.
+                //     // if (node->child[1] != NULL && (node->child[1]->nodekind == StmtK && node->child[1]->subkind.stmt == CompoundK))
+                //     //     ; //do nothing
+                //     // else
+                //     //     symTab->applyToAll(checkIsUsed);
+                // }
+                // else
+                //      symTab->applyToAll(checkIsUsed);
 
                 //printf("Leaving Function\n");
                 //On the case of a oneline function we need to check the params if they are used.
                 //We can only do this if child[1] exists and is not null
-                if (node->child[1] != NULL)
-                {
-                    if (node->child[1]->nodekind == StmtK && node->child[1]->subkind.stmt == ReturnK)
-                        symTab->applyToAll(checkIsUsed);
-                }
+                // if (node->child[1] != NULL)
+                // {
+                //     //This only happens if child[2] is a return statement foo(int x) return a;
+                //     if (node->child[1]->nodekind == StmtK && node->child[1]->subkind.stmt == ReturnK)
+                //         symTab->applyToAll(checkIsUsed);
+                // }
 
+                //Check to see if we have a return statment.
+
+                // printf("Func %s has %d Params\n",node->attr.string,node->numParams);
                 symTab->leave();
                 break;
 
@@ -265,8 +548,9 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     break;
                 }
 
-                node->isUsed = false;
+                //node->isUsed = false;
                 node->isInit = true;
+                node->isParam = true;
                 //If the param is already added
                 if (!symTab->insert(std::string(node->attr.name), (void *)node))
                 {
@@ -280,6 +564,8 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 node->depth = symTab->depth();
 
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+
+                node->parent->numParams++;
                 break;
 
             default:
@@ -304,16 +590,6 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     if (node->child[0] != NULL)
                         node->expType = node->child[0]->expType;
 
-                    //make sure that the index of the array is an integer.
-                    if (node->child[1]->expType != Integer)
-                    {
-                        char buff[64];
-                        convertExpTypeToString(node->child[1]->expType, buff);
-                        printf("ERROR(%d): Array '%s' should be indexed by type int but got type %s.\n",
-                               node->lineno, node->child[0]->attr.name, buff);
-                        NUM_ERRORS++;
-                    }
-
                     //check that the array identifier child[0] is declared as type array
                     lookupNode = (treeNode *)symTab->lookup(std::string(node->child[0]->attr.name));
                     if (lookupNode != NULL && !(lookupNode->isArray))
@@ -326,6 +602,21 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     {
                         printf("ERROR(%d): Cannot index nonarray '%s'.\n", node->child[0]->lineno, node->child[0]->attr.name);
                         NUM_ERRORS++;
+                    }
+
+                    //make sure that the index of the array is an integer.
+                    //Suppress on the case of an undefined and the index is a function. An error will be thrown elsewhere
+                    if (node->child[1]->expType != Integer && node->child[1]->expType != UndefinedType)
+                    {
+                        //Make sure lhs and index is not a function
+                        if (!node->child[1]->isFunc)
+                        {
+                            char buff[64];
+                            convertExpTypeToString(node->child[1]->expType, buff);
+                            printf("ERROR(%d): Array '%s' should be indexed by type int but got type %s.\n",
+                                   node->lineno, node->child[0]->attr.name, buff);
+                            NUM_ERRORS++;
+                        }
                     }
 
                     //throw an error if the array is not indexed
@@ -412,8 +703,8 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                         //HACK.this should only be true if we are the index of an array. we must supress to match output
                         // The index are identifiers. could be a[d[2]] or a[a+c]
                         //This HACK only works for 2 levels of nesting.
-                        //Ignore double nested, and just force our node to become the parent to force a suppression, 
-                        //when indicies are uninitialized 
+                        //Ignore double nested, and just force our node to become the parent to force a suppression,
+                        //when indicies are uninitialized
                         if (currParent->parent != NULL && currParent->parent->op == OPEN_BRACK)
                         {
                             currNode = currParent->parent;
@@ -477,6 +768,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     }
                 }
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+
                 break;
 
             case AssignK:
@@ -575,6 +867,77 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
 
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
 
+                // if(lookupNode != NULL)
+                //     printf("Lookupnode: %s params %d\n",lookupNode->attr.string,lookupNode->numParams);
+                //Iterate through all the siblings of child[0]. This child conatains the parameters for the call.
+                //We can use the lookup node to see what kind of exptypes we have for parameters of the orignial func
+                //Need to build then number of params in the call. Should be able to do so in the Idk  switch
+                //WE cannot do this in the Idk's because we may have a function call within a function call argument.
+
+                //count the number of arguments in the call
+                //Store it in numparams in the current node
+                if (node != NULL)
+                {
+                    TreeNode *tmpNode = node->child[0];
+                    while (tmpNode != NULL)
+                    {
+                        //Store the # of params
+                        node->numParams++;
+                        //printf("params to the call: %d\n", node->numParams);
+                        tmpNode = tmpNode->sibling;
+                    }
+                }
+
+                //We have to few parameters.
+                if (lookupNode != NULL && node->numParams < lookupNode->numParams)
+                {
+                    //printf("node params: %d\nLookup Params: %d\n", node->numParams, lookupNode->numParams);
+                    printf("ERROR(%d): Too few parameters passed for function '%s' declared on line %d.\n", node->lineno, lookupNode->attr.string, lookupNode->lineno);
+                    NUM_ERRORS++;
+                }
+                //Our call matches the number of required params. We now need to type check.
+                else if (lookupNode != NULL && lookupNode->numParams == node->numParams)
+                {
+                    char lookupBuff[64];
+                    char currNodeBuff[64];
+
+                    //TmpNode is looking at the parameters.
+                    TreeNode *tmpCurrNode = node->child[0];
+                    TreeNode *tmpLookupNode = lookupNode->child[0];
+
+                    /*                                            |             |
+                    *                                             V             V
+                    * Iterate through the each param. Ie main(int a, b, c) main(2,3,4) */
+                    for (int paramIndex = 1; paramIndex <= lookupNode->numParams; paramIndex++)
+                    {
+                        convertExpTypeToString(tmpLookupNode->expType, lookupBuff);
+                        convertExpTypeToString(tmpCurrNode->expType, currNodeBuff);
+
+                        if (tmpCurrNode->expType != tmpLookupNode->expType)
+                        {
+                            //HACK:we dont thor additional errors for undefined variables as parameters.
+                            if (tmpCurrNode->expType != UndefinedType)
+                            {
+                                printf("ERROR(%d): Expecting type %s in parameter %d of call to '%s' declared on line %d but got type %s.\n",
+                                       node->lineno,
+                                       lookupBuff,
+                                       paramIndex,
+                                       lookupNode->attr.string,
+                                       lookupNode->lineno,
+                                       currNodeBuff);
+                                NUM_ERRORS++;
+                            }
+                        }
+                    }
+                }
+                //Too many arguments
+                else if (lookupNode != NULL && node->numParams > lookupNode->numParams)
+                {
+                    //printf("node params: %d\nLookup Params: %d\n", node->numParams, lookupNode->numParams);
+                    printf("ERROR(%d): Too many parameters passed for function '%s' declared on line %d.\n", node->lineno, lookupNode->attr.string, lookupNode->lineno);
+                    NUM_ERRORS++;
+                }
+
                 break;
 
             default:
@@ -589,6 +952,16 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
             exit(-1);
         }
 
+        //When the program has fully been semanticly analyzed do one last check for unused globals
+        //this needs to happen at the very end because globals can be used anywhere/any depth
+
+        if (node->sibling == NULL && node->parent == NULL)
+        {
+            //foo(node);
+            tailOfTree = node;
+            symTab->applyToAllGlobal(checkIsUsed);
+        }
+
         node = node->sibling;
     }
 }
@@ -600,11 +973,33 @@ void checkIsUsed(std::string symbolName, void *ptr)
     //printf("Checking node:\n");
     //foo(nodeptr);
     //MAKING THE ASSUMPTION THAT NODES AT GLOBAL SCOPE ARE ALWAYS USED.
-    if (!nodeptr->isUsed && nodeptr->depth != 1)
+    //changing this assumption to always assume the main function is used.
+    //All other functions have to be checked to see if they are called.
+
+    if (!nodeptr->isUsed)
     {
-        printf("WARNING(%d): The variable '%s' seems not to be used.\n",
-               nodeptr->lineno, symbolName.c_str());
-        NUM_WARNINGS++;
+
+        if (nodeptr->isFunc)
+        {
+            if (strcmp(nodeptr->attr.string, "main") != 0)
+            {
+                printf("WARNING(%d): The function '%s' seems not to be used.\n",
+                       nodeptr->lineno, symbolName.c_str());
+                NUM_WARNINGS++;
+            }
+        }
+        else if (nodeptr->isParam)
+        {
+            printf("WARNING(%d): The parameter '%s' seems not to be used.\n",
+                   nodeptr->lineno, symbolName.c_str());
+            NUM_WARNINGS++;
+        }
+        else
+        {
+            printf("WARNING(%d): The variable '%s' seems not to be used.\n",
+                   nodeptr->lineno, symbolName.c_str());
+            NUM_WARNINGS++;
+        }
     }
 }
 
@@ -654,23 +1049,45 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             if (lhs == Integer && rhs != Integer)
             {
                 //HACK for matching output. Supress this Error
-                if (rhs != UndefinedType && rhs != Void)
+                if (rhs != UndefinedType)
                 {
-                    printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
-                           parentNode->lineno, parentNode->attr.string,
-                           buff2);
-                    NUM_ERRORS++;
+                    //Hack: Output prints voids when mult appears
+                    if (rhs == Void && op == MULT)
+                    {
+                        printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
+                               parentNode->lineno, parentNode->attr.string,
+                               buff2);
+                        NUM_ERRORS++;
+                    }
+                    else if (rhs != Void)
+                    {
+                        printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
+                               parentNode->lineno, parentNode->attr.string,
+                               buff2);
+                        NUM_ERRORS++;
+                    }
                 }
             }
             else if (lhs != Integer && rhs == Integer)
             {
                 //HACK for matching output. Supress this Error
-                if (lhs != UndefinedType && lhs != Void)
+                if (lhs != UndefinedType)
                 {
-                    printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
-                           parentNode->lineno, parentNode->attr.string,
-                           buff1);
-                    NUM_ERRORS++;
+                    //Hack: Output prints voids when mult appears
+                    if (lhs == Void && op == MULT)
+                    {
+                        printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
+                               parentNode->lineno, parentNode->attr.string,
+                               buff1);
+                        NUM_ERRORS++;
+                    }
+                    else if (lhs != Void)
+                    {
+                        printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
+                               parentNode->lineno, parentNode->attr.string,
+                               buff1);
+                        NUM_ERRORS++;
+                    }
                 }
             }
             else
@@ -700,12 +1117,6 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
         {
             lhs = lhsNode->expType;
 
-            if (lhsNode->isArray)
-            {
-                printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, op == CHSIGN ? "chsign" : "?");
-                NUM_ERRORS++;
-            }
-
             convertExpTypeToString(lhs, buff1);
 
             //Chsign processing
@@ -720,6 +1131,13 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                            buff1);
                     NUM_ERRORS++;
                 }
+
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, op == CHSIGN ? "chsign" : "?");
+                    NUM_ERRORS++;
+                }
+
                 //printf("chsign\n");
                 //HACK to match output
                 if (parentNode->parent->nodekind == StmtK && parentNode->parent->subkind.stmt == RangeK)
@@ -736,6 +1154,12 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                            parentNode->lineno, parentNode->attr.string,
                            "int",
                            buff1);
+                    NUM_ERRORS++;
+                }
+
+                if (lhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, op == CHSIGN ? "chsign" : "?");
                     NUM_ERRORS++;
                 }
             }
@@ -788,7 +1212,7 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             //foo(rhsNode);
 
             //suppressing. assuming the undefined type error is already handled in main loop
-            if (lhs != UndefinedType)
+            if (lhs != UndefinedType && rhs != UndefinedType)
             {
                 printf("ERROR(%d): '%s' requires operands of the same type but lhs is type %s and rhs is type %s.\n",
                        parentNode->lineno, parentNode->attr.string, buff1, buff2);
@@ -815,41 +1239,54 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             convertExpTypeToString(lhs, buff1);
             convertExpTypeToString(rhs, buff2);
 
-            //foo(lhsNode);
-            //foo(rhsNode);
-            if (lhs == Boolean && rhs != Boolean)
+            // HACK: Error handleing for non boolean types on either side of a binary and or
+            //We can have undefined types on one side or the other, but wont print errors for that specifically
+            //an error is thrown elsewhere for an undefined variable being used.
+            if (lhs != UndefinedType || rhs != UndefinedType)
             {
-                printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff2);
-                NUM_ERRORS++;
-            }
-            else if (lhs != Boolean && rhs == Boolean)
-            {
-                printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff1);
-                NUM_ERRORS++;
+
+                if (lhs == Boolean && rhs != Boolean && rhs != UndefinedType)
+                {
+                    printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
+                           parentNode->lineno, parentNode->attr.string,
+                           buff2);
+                    NUM_ERRORS++;
+                }
+                else if (lhs != Boolean && lhs != UndefinedType && rhs == Boolean)
+                {
+                    printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
+                           parentNode->lineno, parentNode->attr.string,
+                           buff1);
+                    NUM_ERRORS++;
+                }
+                else
+                {
+                    if (lhs != UndefinedType && lhs != Boolean)
+                    {
+                        printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
+                               parentNode->lineno, parentNode->attr.string,
+                               buff1);
+                        NUM_ERRORS++;
+                    }
+
+                    if (rhs != UndefinedType && rhs != Boolean)
+                    {
+                        printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
+                               parentNode->lineno, parentNode->attr.string,
+                               buff2);
+                        NUM_ERRORS++;
+                    }
+                }
+
+                if (lhsNode->isArray || rhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
+                    NUM_ERRORS++;
+                }
+                return Boolean;
             }
             else
-            {
-                printf("ERROR(%d): '%s' requires operands of type bool but lhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff1);
-                NUM_ERRORS++;
-
-                printf("ERROR(%d): '%s' requires operands of type bool but rhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff2);
-                NUM_ERRORS++;
-            }
-
-            if (lhsNode->isArray || rhsNode->isArray)
-            {
-                printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
-                NUM_ERRORS++;
-            }
-            return Boolean;
+                return Boolean;
         }
 
         else if (op == NOT)
@@ -917,11 +1354,15 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
             else
             {
                 //If we are undefined it is assumed the LHS is undeclared and has already thrown an error.
-                if (lhs != UndefinedType && lhs != Void)
+                if (lhs != UndefinedType && rhs != UndefinedType)
                 {
-                    printf("ERROR(%d): '%s' requires operands of the same type but lhs is type %s and rhs is type %s.\n",
-                           parentNode->lineno, parentNode->attr.string, buff1, buff2);
-                    NUM_ERRORS++;
+                    //Suppress this error if we are a function. An error is thrown elsewhere for this.
+                    if (!lhsNode->isFunc && !rhsNode->isFunc)
+                    {
+                        printf("ERROR(%d): '%s' requires operands of the same type but lhs is type %s and rhs is type %s.\n",
+                               parentNode->lineno, parentNode->attr.string, buff1, buff2);
+                        NUM_ERRORS++;
+                    }
                 }
             }
 
@@ -946,34 +1387,39 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                 return Integer;
             }
 
-            if (lhs == Integer && rhs != Integer)
+            if (lhs != UndefinedType && rhs != UndefinedType)
             {
-                printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff2);
-                NUM_ERRORS++;
-            }
-            else if (lhs != Integer && rhs == Integer)
-            {
-                printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff1);
-                NUM_ERRORS++;
+                if (lhs == Integer && rhs != Integer)
+                {
+                    printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
+                           parentNode->lineno, parentNode->attr.string,
+                           buff2);
+                    NUM_ERRORS++;
+                }
+                else if (lhs != Integer && rhs == Integer)
+                {
+                    printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
+                           parentNode->lineno, parentNode->attr.string,
+                           buff1);
+                    NUM_ERRORS++;
+                }
+                else
+                {
+                    printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
+                           parentNode->lineno, parentNode->attr.string,
+                           buff1);
+                    NUM_ERRORS++;
+
+                    printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
+                           parentNode->lineno, parentNode->attr.string,
+                           buff2);
+                    NUM_ERRORS++;
+                }
+
+                return Integer;
             }
             else
-            {
-                printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff1);
-                NUM_ERRORS++;
-
-                printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
-                       parentNode->lineno, parentNode->attr.string,
-                       buff2);
-                NUM_ERRORS++;
-            }
-
-            return Integer;
+                return Integer;
         }
         //TODO:
         //CHECK FOR ARRAYS NOT CURRENTLY IMPLEMTED

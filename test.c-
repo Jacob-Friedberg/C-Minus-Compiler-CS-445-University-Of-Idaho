@@ -1,14 +1,14 @@
-// C-S21
-// globals
-int a[11];
-int x:666;
-
 main()
 {
-   int b[22];
-   int y:777;
-   static int c[33];
-   static int z:888;
+    int a[10];
+    bool b[10];
 
-   z=999;
+    if b then 111;
+    if 1 then 222;
+
+    while b do 333;
+    while 'c' do 444;
+
+    for x=a to a by a do 555;
+    for y=true to 'c' by main do x*y;
 }

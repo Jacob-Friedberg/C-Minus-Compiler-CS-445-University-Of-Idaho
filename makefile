@@ -10,7 +10,7 @@ CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic -g
 LEX = flex
 #-Wcounterexamples
 BISONFLAGS = -v  -t -d
-TARNAME = pas03.tar
+TARNAME = pas04.tar
 
 $(BIN): $(OBJS)
 	$(CC) $(CCFLAGS) $(OBJS) $(LIBS) -o $(BIN)
@@ -29,7 +29,7 @@ all:
 .PHONY : clean
 clean:
 	@echo "cleaning..."
-	rm -f $(BIN) $(OBJS) lex.yy.c parser.tab.c parser.tab.h parser.output *~
+	rm -f $(BIN) $(OBJS) lex.yy.c parser.tab.c parser.output *~
 	rm -rf $(TARNAME)
 .PHONY : tar
 tar:

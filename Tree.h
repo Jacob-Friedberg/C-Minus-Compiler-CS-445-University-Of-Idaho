@@ -114,6 +114,10 @@ typedef struct treeNode
     bool isRangeK;
     int depth;
     bool isFunc;
+    bool isParam;
+    int numParams;
+    bool isIo;
+    
     bool isInitErrorThrown;
     OpKind op;
     bool isOp;
