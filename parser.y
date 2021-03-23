@@ -636,7 +636,8 @@ int main(int argc, char *argv[])
             if ((yyin = fopen(argv[optind], "r"))) {
             // file open successful
             }
-            else {
+            else 
+            {
                 // failed to open file
                 printf("ERROR(ARGLIST): source file \"%s\" could not be opened.\n", argv[optind]);
                 NUM_ERRORS++;
@@ -680,6 +681,12 @@ int main(int argc, char *argv[])
       printf("Number of errors: %d\n",NUM_ERRORS);
 
     }
+    else
+    {
+        printf("Number of warnings: %d\n",NUM_WARNINGS);
+        printf("Number of errors: %d\n",NUM_ERRORS);
+    }
+
     return 0;
 }
 

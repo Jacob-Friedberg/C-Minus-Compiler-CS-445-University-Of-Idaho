@@ -116,8 +116,9 @@ typedef struct treeNode
     bool isFunc;
     bool isParam;
     int numParams;
+    bool undeclared;
     bool isIo;
-    
+    char *tokenStr;
     bool isInitErrorThrown;
     OpKind op;
     bool isOp;
@@ -129,6 +130,7 @@ typedef struct treeNode
     bool isStatic;   // is staticly allocated?
     bool isUsed;
     bool isInit;
+    bool isConst;
 
     // even more semantic stuff will go here in later assignments.
 } TreeNode;

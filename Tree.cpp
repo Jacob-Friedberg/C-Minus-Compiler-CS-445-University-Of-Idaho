@@ -25,7 +25,10 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
 
     treeNode->expType = type;
 
+    if(token != NULL)
+        treeNode->tokenStr = token->tokenStr;
     treeNode->isFunc = false;
+    treeNode->isConst = false;
     treeNode->isParam = false;
     treeNode->numParams = 0;
     treeNode->isUsed = false;
@@ -50,11 +53,14 @@ TreeNode *newStmtNode(StmtKind kind, TokenData *token, TreeNode *c0, TreeNode *c
 
     treeNode->nodekind = StmtK;
 
+    if(token != NULL)
+        treeNode->tokenStr = token->tokenStr;
     treeNode->subkind.stmt = kind;
     treeNode->isRangeK = false;
     treeNode->isRangeKBy = false;
     treeNode->expType = UndefinedType;
     treeNode->isFunc = false;
+    treeNode->isConst = false;
     treeNode->isParam = false;
     treeNode->numParams = 0;
     treeNode->isUsed = false;
@@ -77,9 +83,12 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
         treeNode->lineno = token->lineNum;
 
     treeNode->nodekind = ExpK;
-
+    
+    if(token != NULL)
+        treeNode->tokenStr = token->tokenStr;
     treeNode->subkind.exp = kind;
     treeNode->isFunc = false;
+    treeNode->isConst = false;
     treeNode->isParam = false;
     treeNode->numParams = 0;
     treeNode->isUsed = false;
