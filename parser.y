@@ -9,7 +9,7 @@
 #include "ourgetopt.h"
 #include "symbolTable.h"
 #include "semantic.h"
-
+#include "yyerror.h"
 
 
 
@@ -19,30 +19,32 @@ extern FILE *yyin;
 extern int yydebug;
 
 #define YYERROR_VERBOSE
-void yyerror(const char *msg)
-{
-    printf("ERROR: %s\n", msg);
-}
 
-static char *toUpperString(char *str)
-{
-    int i = 0;
-    while(str[i])
-    {
-        str[i]=toupper(str[i]);
-        i++;
-    }
-    return str;
-}
+// void yyerror(const char *msg)
+// {
+//     printf("ERROR: %s\n", msg);
+// }
+
+// static char *toUpperString(char *str)
+// {
+//     int i = 0;
+//     while(str[i])
+//     {
+//         str[i]=toupper(str[i]);
+//         i++;
+//     }
+//     return str;
+// }
 
 TreeNode *syntaxTree;
 
 
 %}
 /*
-%define parse.lac full
-%define parse.error detailed
+
+
 */
+%define parse.error detailed
 // this is included in the tab.h file
 // so scanType.h must be included before the tab.h file!!!!
 %union {
@@ -79,7 +81,7 @@ TreeNode *syntaxTree;
 %type <treenode> call args argList constant matched unmatched 
 %type <treenode> unmatchedSelectStmt matchedSelectStmt matchedIterStmt unmatchedIterStmt 
 
-%type <tokenData> unaryOp relOp sumOp mulOp minMaxOp 
+%type <tokenData> unaryOp relOp sumOp mulOp minMaxOp assignop
 
 %type <expType> typeSpec
 
@@ -90,40 +92,48 @@ TreeNode *syntaxTree;
 /*------------------------START OF GRAMMER-------------------------------*/
 /*------------------------1-3-------------------------------*/
 program         : declList {syntaxTree = $1;}
+                | error {$$ = NULL;}
                 ;
 
 declList        : declList decl  { //printf("In DeclList Processing\n");
-                                   $$ = addSibling($1,$2);
+                                   if($2 != NULL) $$ = addSibling($1,$2);else $$=$1;
                                    //printf("OUT OF DECLLIST PROCESSING\n");
                                    }            
                 | decl {$$ = $1;}
+                | error {$$ = NULL;}
                 ;
 
 decl            : varDecl {$$ = $1;}
                 | funDecl {$$ = $1;}
+                | error {$$ = NULL;}
                 ;  
 /*------------------------4-9-------------------------------*/
 varDecl         : typeSpec varDeclList SEMI { setType($2,$1,false); $$ = $2;}
+                | error varDeclList SEMI {$$ = NULL; /*yyerrok;*/}
+                | typeSpec error SEMI {$$ = NULL; /*yyerrok;*/ /*yyerrok;*/}
                 ;
                 /*FIX STATIC LATER*/
 scopedVarDecl   : STATIC typeSpec varDeclList SEMI  { setType($3,$2,true);
                                                     $$=$3;
+                                                    /*yyerrok;*/
                                                     }
                 | typeSpec varDeclList SEMI {   setType($2,$1,false);
                                                 $$ = $2;
+                                                /*yyerrok;*/
                                             } 
-
-                                              ; 
                 ;
 
 varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Processing\n");
-                                                  $$ = addSibling($1,$3); }
+                                                  if($3 != NULL) $$ = addSibling($1,$3);else $$=$1; /*yyerrok;*/ }
                 | varDeclInit { $$ = $1; }
+                | varDeclList COMMA error {$$ = NULL;}
+                | error {$$ = NULL;}
                 ;
 
 varDeclInit     : varDeclId {$$ = $1;}
                 | varDeclId COLON simpleExp     {$$ = $1;
                                                  $$->child[0] = $3;}
+                | error COLON simpleExp {$$ = NULL; /*yyerrok;*/}
                 ;
 
 varDeclId       : ID                                    {$$ = newDeclNode(VarK,UndefinedType,$1);
@@ -138,6 +148,8 @@ varDeclId       : ID                                    {$$ = newDeclNode(VarK,U
                                                          $$->isArray = true;
                                                          $$->arraySize = $3->nValue;
                                                         }
+                | ID OPEN_BRACK error {$$ = NULL;}
+                | error CLOSE_BRACK {$$ = NULL; /*yyerrok;*/}                                        
                 ;
 
 typeSpec        : INT {$$ = Integer;}
@@ -155,6 +167,10 @@ funDecl         : typeSpec ID OPEN_PAREN params CLOSE_PAREN stmt    {$$ = newDec
                                                                     $$->attr.name = $1->tokenStr;
                                                                     $$->attrSet = true;                                                                     
                                                                     }
+                | typeSpec error {$$ = NULL;} 
+                | typeSpec ID OPEN_PAREN error {$$ = NULL;}
+                | ID OPEN_PAREN error {$$ = NULL;} 
+                | ID OPEN_PAREN params CLOSE_PAREN error {$$ = NULL;}                                                 
                 ;
 
 params          : paramList {$$ = $1;}
@@ -162,16 +178,28 @@ params          : paramList {$$ = $1;}
                 ;
 
 paramList       : paramList SEMI paramTypeList {//printf("In ParamList Processing\n");
-                                                $$ = addSibling($1,$3);}
+                                                if($3 != NULL) $$ = addSibling($1,$3);
+                                                else
+                                                  $$ = $1;
+                                                }
                 | paramTypeList {$$ = $1;}
+                | paramList SEMI error {$$ = NULL;}
+                | error {$$ = NULL;}
                 ;
 
 paramTypeList   : typeSpec paramIdList  {setType($2,$1,false); $$ = $2;}
+                | typeSpec error  {$$ = NULL;}
                 ;
 
-paramIdList     : paramIdList COMMA paramId {//printf("In ParamIDList Processing\n");
-                                              $$ = addSibling($1,$3);}
+paramIdList     : paramIdList COMMA paramId { 
+                                              if($3 != NULL) $$ = addSibling($1,$3);
+                                              else
+                                              $$ = $1;
+                                              /*yyerrok;*/
+                                              }
                 | paramId {$$ = $1;}
+                | paramId COMMA error {$$ = NULL;}
+                | error {$$ = NULL;}
                 ;
 
 paramId         : ID                        {$$ = newDeclNode(ParamK,UndefinedType,$1);
@@ -196,6 +224,8 @@ stmt            : expStmt
                 ;
 */
 
+/* DO THESE!!!!!!! TOODOOO*/
+
 stmt            : matched   {$$ = $1;}
                 | unmatched {$$ = $1;}
                 ;
@@ -211,25 +241,27 @@ matched         : expStmt           {$$ = $1;}
 unmatched       : unmatchedSelectStmt   {$$ = $1;}
                 | unmatchedIterStmt     {$$ = $1;}
                 ;
-
+/* DO THESE!!!!!!! TOODOOO*/
 
 expStmt         : exp SEMI {$$ = $1;}
                 | SEMI {$$ = NULL;}
+                | error SEMI {$$ = NULL; yyerrok;}
                 ;
 
 compoundStmt    : OPEN_BRACE localDecls stmtList CLOSE_BRACE    { $$ = newStmtNode(CompoundK,$1,$2,$3);
                                                                   $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  yyerrok;
                                                                 }
                 ;
 
 localDecls      : localDecls scopedVarDecl {//printf("In Local Decls Processing\n");
-                                            $$ = addSibling($1,$2);}
+                                            if($2 != NULL)$$ = addSibling($1,$2);else $$=$1;}
                 | {$$ = NULL;}/*EMPTY*/
                 ;
 
 stmtList        : stmtList stmt         {//printf("In stmtList Processing\n");
-                                        if($2 != NULL)$$ = addSibling($1,$2);else $$=$1;}
+                                        if($2 != NULL)$$ = addSibling($1,$2);else $$=$1; /*yyerrok;*/}
                 | {$$ = NULL;} /*EMPTY*/
                 ;
 /*
@@ -238,6 +270,7 @@ selectStmt      : IF simpleExp THEN stmt
                 ;
 */
 
+/* DO THESE!!!!!!! TOODOOO*/
 matchedSelectStmt   : IF simpleExp THEN matched ELSE matched    { $$ = newStmtNode(IfK,$1,$2,$4,$6);
                                                                   $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
@@ -284,6 +317,7 @@ matchedIterStmt     : WHILE simpleExp DO matched                { $$ = newStmtNo
                                                                   $$->attrSet = true;
                                                                 }
                     ;      
+/* DO THESE!!!!!!! TOODOOO*/
 
 /*
 iterStmt        : WHILE simpleExp DO stmt
@@ -299,6 +333,9 @@ iterRange       : simpleExp TO simpleExp                        { $$ = newStmtNo
                                                                   $$->attr.string = $4->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
+                | simpleExp TO error { $$ = NULL; }
+                | error BY error  { $$ = NULL; /*yyerrok;*/ }
+                | simpleExp TO simpleExp BY error { $$ = NULL; }
                 ;
 
 returnStmt      : RETURN SEMI                                   { $$ = newStmtNode(ReturnK,$1);
@@ -308,33 +345,20 @@ returnStmt      : RETURN SEMI                                   { $$ = newStmtNo
                 | RETURN exp SEMI                               { $$ = newStmtNode(ReturnK,$1,$2);
                                                                   $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  /*yyerrok;*/
                                                                 }
+                | RETURN error { $$ = NULL; /*yyerrok;*/ }
                 ;
 
 breakStmt       : BREAK SEMI                                    { $$ = newStmtNode(BreakK,$1);
                                                                   $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  /*yyerrok;*/
                                                                 }
                 ;
 
 /*------------------------26-46-------------------------------*/
-exp             : mutable ASS exp                               { $$ = newExpNode(AssignK,$2,$1,$3);
-                                                                  $$->attr.string = $2->tokenStr;
-                                                                  $$->attrSet = true;
-                                                                }
-                | mutable ADDASS exp                            { $$ = newExpNode(AssignK,$2,$1,$3);
-                                                                  $$->attr.string = $2->tokenStr;
-                                                                  $$->attrSet = true;
-                                                                }
-                | mutable SUBASS exp                            { $$ = newExpNode(AssignK,$2,$1,$3);
-                                                                  $$->attr.string = $2->tokenStr;
-                                                                  $$->attrSet = true;
-                                                                }
-                | mutable MULASS exp                            { $$ = newExpNode(AssignK,$2,$1,$3);
-                                                                  $$->attr.string = $2->tokenStr;
-                                                                  $$->attrSet = true;
-                                                                }
-                | mutable DIVASS exp                            { $$ = newExpNode(AssignK,$2,$1,$3);
+exp             : mutable assignop exp                          { $$ = newExpNode(AssignK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
                                                                 }
@@ -347,34 +371,55 @@ exp             : mutable ASS exp                               { $$ = newExpNod
                                                                   $$->attrSet = true;
                                                                 }
                 | simpleExp  {$$ = $1;}
+                
+                | error assignop exp                      { $$ = NULL; /*yyerrok;*/ }
+                | mutable assignop error                  { $$ = NULL; }
+                | error INC                               { $$=NULL; /*yyerrok;*/ }
+                | error DEC                               { $$=NULL; /*yyerrok;*/ }
+                ;
+
+assignop        : ASS {$$ = $1;}
+                | ADDASS {$$ = $1;}
+                | SUBASS {$$ = $1;}
+                | MULASS {$$ = $1;}
+                | DIVASS {$$ = $1;}
                 ;
 
 simpleExp       : simpleExp OR andExp                           { $$ = newExpNode(OpK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                 }
                 | andExp   {$$ = $1;}
+                | simpleExp OR error                      { $$=NULL; yyerrok;};
                 ;
 
 andExp          : andExp AND unaryRelExp                        { $$ = newExpNode(OpK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                 }
                 | unaryRelExp   {$$ = $1;}
+                | andExp AND error { $$ = NULL; }
                 ;
                 
 unaryRelExp     : NOT unaryRelExp                               { $$ = newExpNode(OpK,$1,$2);
                                                                   $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                 }
                 | relExp {$$ = $1;}
+                | NOT error                               { $$ = NULL; }
                 ;
 
 relExp          : minMaxExp relOp minMaxExp                     { $$ = newExpNode(OpK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                 }
                 | minMaxExp {$$ = $1;}
+                | minMaxExp relOp error                   { $$ = NULL; }
+                | error relOp minMaxExp                  { $$ = NULL; }
                 ;
 
 relOp           : LEQ                   {$$ = $1;}
@@ -388,8 +433,10 @@ relOp           : LEQ                   {$$ = $1;}
 minMaxExp       : minMaxExp minMaxOp sumExp                      {$$ = newExpNode(OpK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                  }
                 | sumExp {$$ = $1;}
+                | error {$$ = NULL;}
                 ;
 
 minMaxOp        : MAX  {$$ = $1;}
@@ -399,8 +446,10 @@ minMaxOp        : MAX  {$$ = $1;}
 sumExp          : sumExp sumOp mulExp                            {$$ = newExpNode(OpK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                  }
                 | mulExp   {$$ = $1;}
+                | sumExp sumOp error                      { $$ = NULL; }
                 ;
 
 sumOp           : PLUS {$$ = $1;}
@@ -410,8 +459,10 @@ sumOp           : PLUS {$$ = $1;}
 mulExp          : mulExp mulOp unaryExp                         { $$ = newExpNode(OpK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                 }
                 | unaryExp {$$ = $1;}
+                | mulExp mulOp error                      { $$ = NULL; }
                 ;
 
 mulOp           : MULT {$$ = $1;}
@@ -422,8 +473,10 @@ mulOp           : MULT {$$ = $1;}
 unaryExp        : unaryOp unaryExp                              { $$ = newExpNode(OpK,$1,$2);
                                                                   $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
                                                                 }
                 | factor {$$ = $1;}
+                | unaryOp error                           { $$ = NULL; }
                 ;
 
 unaryOp         : MINUS {$$ = $1; $$->tokenClass = CHSIGN;}
@@ -439,6 +492,7 @@ mutable         : ID                                            { $$ = newExpNod
                                                                   $$->attr.name = $1->tokenStr;
                                                                   $$->attrSet = true;
                                                                   $$->isArray = false;  
+                                                                  
                                                                 }
                 | ID OPEN_BRACK exp CLOSE_BRACK                 { 
                                                                   TreeNode * node = newExpNode(IdK,$1); 
@@ -449,10 +503,11 @@ mutable         : ID                                            { $$ = newExpNod
                                                                   $$->attr.name = $2->tokenStr;
                                                                   $$->attrSet = true;
                                                                   $$->isArray = true;
+                                                                  
                                                                 }
                 ;
 
-immutable       : OPEN_PAREN exp CLOSE_PAREN  { $$ = $2;} 
+immutable       : OPEN_PAREN exp CLOSE_PAREN  { $$ = $2; yyerrok;} 
                 | call  {$$ = $1;}
                 | constant {$$ = $1;}
                 ;
@@ -461,6 +516,7 @@ call            : ID OPEN_PAREN args CLOSE_PAREN    { $$ = newExpNode(CallK,$1,$
                                                       $$->attr.name = $1->tokenStr;
                                                       $$->attrSet = true;
                                                     }
+                | error OPEN_PAREN                  { $$ = NULL; yyerrok; }                                    
                 ;
 
 args            : argList   {$$ = $1;}
@@ -468,8 +524,9 @@ args            : argList   {$$ = $1;}
                 ;
 
 argList         : argList COMMA exp     {//printf("In ArgList Processing\n");
-                                        $$ = addSibling($1,$3);}
+                                        if($3 != NULL)$$ = addSibling($1,$3); else$$=$1; yyerrok;}
                 | exp                   {$$ = $1;}
+                | argList ',' error                       { $$=NULL; }
                 ;
 
 constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
@@ -607,6 +664,8 @@ int main(int argc, char *argv[])
     extern int optind;
     extern int NUM_WARNINGS;
     extern int NUM_ERRORS;
+
+    initErrorProcessing();
     while(1)
     {
         //Picking off the options we want. p
@@ -661,9 +720,10 @@ int main(int argc, char *argv[])
     yyparse();
     SymbolTable *symTab; 
     symTab = new SymbolTable();
-    if(printflag)
+    if(printflag && NUM_ERRORS == 0)
     {
       checkTree2(symTab,syntaxTree,false,NULL);
+      
       treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
       //Child 0 is our params. This means main() child 0 is NULL and main(params a) child 0 is non null
       //We also need to make sure its a function

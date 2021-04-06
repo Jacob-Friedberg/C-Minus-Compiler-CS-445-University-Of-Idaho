@@ -6,6 +6,8 @@
 #include <ctype.h>
 
 static int lineNumber = 1;
+int line;
+char *lastToken;
 int numErrors;    // ERR err count
 
 // //Convert a string with escape sequences from:inPtr to:outPtr
@@ -166,6 +168,9 @@ static void convertEscapeChar(char *inBuff, char *outBuff)
 
 static int setValue(int lineNumber, int tokenClass, char *svalue)
 {
+    //set the last token to something
+    lastToken = svalue;
+    line = lineNumber;
     // create the pass-back data space
     yylval.tokenData = new TokenData;
 
