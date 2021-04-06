@@ -92,7 +92,6 @@ TreeNode *syntaxTree;
 /*------------------------START OF GRAMMER-------------------------------*/
 /*------------------------1-3-------------------------------*/
 program         : declList {syntaxTree = $1;}
-                | error {$$ = NULL;}
                 ;
 
 declList        : declList decl  { //printf("In DeclList Processing\n");
@@ -100,7 +99,6 @@ declList        : declList decl  { //printf("In DeclList Processing\n");
                                    //printf("OUT OF DECLLIST PROCESSING\n");
                                    }            
                 | decl {$$ = $1;}
-                | error {$$ = NULL;}
                 ;
 
 decl            : varDecl {$$ = $1;}
@@ -419,7 +417,6 @@ relExp          : minMaxExp relOp minMaxExp                     { $$ = newExpNod
                                                                 }
                 | minMaxExp {$$ = $1;}
                 | minMaxExp relOp error                   { $$ = NULL; }
-                | error relOp minMaxExp                  { $$ = NULL; }
                 ;
 
 relOp           : LEQ                   {$$ = $1;}
@@ -436,7 +433,6 @@ minMaxExp       : minMaxExp minMaxOp sumExp                      {$$ = newExpNod
                                                                   
                                                                  }
                 | sumExp {$$ = $1;}
-                | error {$$ = NULL;}
                 ;
 
 minMaxOp        : MAX  {$$ = $1;}
@@ -564,93 +560,6 @@ constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
 
 /*------------------------END OF GRAMMER--------------------------------*/
 
-/* OLD TOKEN TESTING CODE
-tokenlist       : tokenlist token
-                | token 
-                ;
-
-token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->lineNum,$1->tokenStr);}
-                | NUMCONST      {printf("Line %d Token: NUMCONST Value: %d  Input: %s\n",   $1->lineNum,
-                                                                                            $1->nValue,$1->tokenStr);}
-                | CHARCONST     {
-                                    if(strlen($1->sValue) > 1)
-                                    {
-                                        printf("WARNING(%d): character is %d characters long and not a single character: '%s'.  The first char will be used.\n",
-                                                                                            $1->lineNum,
-                                                                                            (int)strlen($1->sValue),
-                                                                                            $1->tokenStr);
-                                    }
-                                    
-                                    printf("Line %d Token: CHARCONST Value: '%c'  Input: %s\n",$1->lineNum,
-                                                                                            $1->cValue,$1->tokenStr);
-                                                                                            
-                                }
-                | STRINGCONST   {printf("Line %d Token: STRINGCONST Value: \"%s\"  Len: %d  Input: %s\n",$1->lineNum,
-                                                                                            $1->sValue,
-                                                                                            ((int)strlen($1->sValue)),
-                                                                                            $1->tokenStr);}
-                | INT           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-
-                | CHAR          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-
-                | IF            {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-
-                | THEN          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}   
-                
-                | ELSE          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | WHILE         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | DO            {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | FOR           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | TO            {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | BY            {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | RETURN        {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | BREAK         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | STATIC        {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | NOT           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | AND           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));} 
-                | OR            {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | BOOL          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | TRUE          {printf("Line %d Token: BOOLCONST Value: %d  Input: %s\n",$1->lineNum,
-                                                                                        $1->nValue,
-                                                                                        $1->tokenStr);} 
-                
-                | FALSE         {printf("Line %d Token: BOOLCONST Value: %d  Input: %s\n",$1->lineNum,
-                                                                                        $1->nValue,
-                                                                                        $1->tokenStr);}
-
-                | OPEN_BRACE    {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | CLOSE_BRACE   {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | OPEN_PAREN    {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | CLOSE_PAREN   {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | COMMA         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | COLON         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}                                                                         
-                | ASS           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | MINUS         {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | DIV           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | MULT          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | MOD           {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | EQ            {printf("Line %d Token: %s\n",$1->lineNum,"EQ");}
-                | OPEN_BRACK    {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | CLOSE_BRACK   {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | LESS          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | GREATER       {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | ADDASS        {printf("Line %d Token: %s\n",$1->lineNum,"ADDASS");}
-                | SUBASS        {printf("Line %d Token: %s\n",$1->lineNum,"SUBASS");}
-                | MULASS        {printf("Line %d Token: %s\n",$1->lineNum,"MULASS");}
-                | DIVASS        {printf("Line %d Token: %s\n",$1->lineNum,"DIVASS");}
-                | DEC           {printf("Line %d Token: %s\n",$1->lineNum,"DEC");}
-                | INC           {printf("Line %d Token: %s\n",$1->lineNum,"INC");}
-                | NEQ           {printf("Line %d Token: %s\n",$1->lineNum,"NEQ");}
-                | PLUS          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | MIN           {printf("Line %d Token: %s\n",$1->lineNum,"MIN");}
-                | MAX           {printf("Line %d Token: %s\n",$1->lineNum,"MAX");}
-                | QUESTION      {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                | GEQ           {printf("Line %d Token: %s\n",$1->lineNum,"GEQ");}
-                | LEQ           {printf("Line %d Token: %s\n",$1->lineNum,"LEQ");}
-                | SEMI          {printf("Line %d Token: %s\n",$1->lineNum,toUpperString($1->tokenStr));}
-                
-                ;
-*/
 %%
 extern int yydebug;
 

@@ -210,8 +210,8 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
     //On many recursions the state is maintained and not overwritten,
     //Unless explicitly told to.
     static bool firstNode = true;
-    static TreeNode *headOfTree = NULL;
-    static TreeNode *tailOfTree = NULL;
+    //static TreeNode *headOfTree = NULL;
+    //static TreeNode *tailOfTree = NULL;
     static bool returnStmtFound = false;
 
     //Counts how deep we are in nested loops(for and while)
@@ -228,7 +228,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
         //this is only done to the first node seen in the loop.
         if (firstNode)
         {
-            headOfTree = node;
+            //headOfTree = node;
             firstNode = false;
             //build the IO library.
             ioLibrary(symTab);
@@ -1168,7 +1168,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
         if (node->sibling == NULL && node->parent == NULL)
         {
             //foo(node);
-            tailOfTree = node;
+            //tailOfTree = node;
             symTab->applyToAllGlobal(checkIsUsed);
         }
 

@@ -30,10 +30,10 @@
 // use a user supplied function to print the pointer.
 //
 
-// print nothing about the pointer
-void pointerPrintNothing(void *data)
-{
-}
+// // print nothing about the pointer
+// void pointerPrintNothing(void *data)
+// {
+// }
    
 // print the pointer as a hex address
 void pointerPrintAddr(void *data)

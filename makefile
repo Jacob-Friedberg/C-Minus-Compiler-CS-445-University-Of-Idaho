@@ -9,7 +9,7 @@ CC   = g++
 CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic -g
 LEX = flex
 #-Wcounterexamples
-BISONFLAGS = -v  -t -d
+BISONFLAGS = -v  -t -d 
 TARNAME = pas04.tar
 
 $(BIN): $(OBJS)
