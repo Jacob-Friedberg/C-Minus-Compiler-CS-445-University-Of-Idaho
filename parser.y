@@ -45,6 +45,8 @@ TreeNode *syntaxTree;
 */
 // this is included in the tab.h file
 // so scanType.h must be included before the tab.h file!!!!
+%define parse.error verbose
+
 %union {
     ExpType expType;
     TokenData *tokenData;

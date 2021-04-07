@@ -15,38 +15,9 @@ wallace(int wrong, trousers)
     close;
     11*22+33*44;
     close = shave;
-    wrong = trousers % (666/wrong);
+    
     gromit = wrong * trousers - gromit + -42;
-    gromit += 27182818;
-    gromit -= -31415927;
-    gromit /= (wrong *= 42);
-    close = wrong < trousers and trousers <= gromit;
-    shave = wrong > trousers and trousers >= gromit;
-    {
-        int a, grand:1/2, day:3*4, out:-9;
-        a = grand += day -= out;
-    }
-    close = -1*2+3<4*5 and 6+7>-3;
-    shave = true or ((-(1*(2+3)))<(4*5) and ((6+7)>(-3)));
-    if shave != close then shave = not close;
-    if not  (shave == close or  not  close) then shave = true;
-    else close = false;
-    mysteriousPenguin = - (- (- 008) - -(cheese--));
-
-    while shave do {
-        static int were, rabbit;
-        static int sheep[10];
-
-        sheep[2] = 1618;
-        if sheep[2]<496 then break;
-        wallace(gromit--, were-rabbit);
-        { 
-            int the, wrong, trousers;
-
-            the = wrong += trousers++;
-            if were == rabbit then were = wrong--;  // assignment is in test
-        }
-    }
+    
     return;
 }       
 
