@@ -8,7 +8,10 @@
 static int lineNumber = 1;
 int line;
 char *lastToken;
-int numErrors;    // ERR err count
+
+
+extern int NUM_ERRORS;
+extern int NUM_WARNINGS;
 
 // //Convert a string with escape sequences from:inPtr to:outPtr
 // static void convertEscapeStr2(char *inPtr, char *outPtr)
@@ -185,6 +188,16 @@ static int setValue(int lineNumber, int tokenClass, char *svalue)
     }
     else if (tokenClass == CHARCONST)
     {
+        //throw a warning ignoring all characters past the end
+        //Subtract 2 from the strlen for the ' '
+        if( ((int)strlen(svalue) -2) != 1)
+        {
+            printf("WARNING(%d): character is %d characters long and not a single character: '%s'.  The first char will be used.\n",
+                lineNumber,
+                ((int)strlen(svalue) -2),
+                svalue);
+            NUM_WARNINGS++;
+        }
         //yylval.tokenData->cValue = svalue[1];
         yylval.tokenData->sValue = strdup(svalue);
         convertEscapeChar(yylval.tokenData->sValue,yylval.tokenData->sValue);
@@ -298,6 +311,6 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 {escapedCharConst}        {return setValue(lineNumber,CHARCONST,yytext);}
 {numbers}+                {return setValue(lineNumber,NUMCONST,yytext);}
 {letters}|{letterDig}*    {return setValue(lineNumber,ID,yytext);}
-.                         {printf("ERROR(%d): Invalid or misplaced input character: '%c'. Character Ignored.\n",lineNumber,yytext[0]);}
+.                         {printf("ERROR(%d): Invalid or misplaced input character: '%c'. Character Ignored.\n",lineNumber,yytext[0]); NUM_ERRORS++;}
 
 %%

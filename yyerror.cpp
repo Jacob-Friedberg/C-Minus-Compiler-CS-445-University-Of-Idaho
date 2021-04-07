@@ -103,8 +103,14 @@ void initErrorProcessing() {
     niceTokenNameMap["THEN"] = (char *)"\"then\"";
     niceTokenNameMap["TO"] = (char *)"\"to\"";
     niceTokenNameMap["WHILE"] = (char *)"\"while\"";
-    niceTokenNameMap["SEMI"] = (char *)"\";\"";
-    niceTokenNameMap["GREATER"] = (char *)"\">\"";
+    niceTokenNameMap["SEMI"] = (char *)"\';'";
+    niceTokenNameMap["GREATER"] = (char *)"'>'";
+    niceTokenNameMap["ASS"] = (char *)"'='";
+    niceTokenNameMap["OPEN_PAREN"] = (char *)"'('";
+    niceTokenNameMap["OPEN_BRACE"] = (char *)"'{'";
+    niceTokenNameMap["COMMA"] = (char *)"','";
+    niceTokenNameMap["MOD"] = (char *)"'%'";
+    niceTokenNameMap["DIV"] = (char *)"'/'";
     niceTokenNameMap["$end"] = (char *)"end of input";
 }
 

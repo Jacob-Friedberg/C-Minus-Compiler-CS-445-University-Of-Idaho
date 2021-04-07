@@ -107,22 +107,22 @@ decl            : varDecl {$$ = $1;}
                 ;  
 /*------------------------4-9-------------------------------*/
 varDecl         : typeSpec varDeclList SEMI { setType($2,$1,false); $$ = $2;}
-                | error varDeclList SEMI {$$ = NULL; /*yyerrok;*/}
+                | error varDeclList SEMI {$$ = NULL; yyerrok;}
                 | typeSpec error SEMI {$$ = NULL; /*yyerrok;*/ /*yyerrok;*/}
                 ;
                 /*FIX STATIC LATER*/
 scopedVarDecl   : STATIC typeSpec varDeclList SEMI  { setType($3,$2,true);
                                                     $$=$3;
-                                                    /*yyerrok;*/
+                                                    yyerrok;
                                                     }
                 | typeSpec varDeclList SEMI {   setType($2,$1,false);
                                                 $$ = $2;
-                                                /*yyerrok;*/
+                                                yyerrok;
                                             } 
                 ;
 
 varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Processing\n");
-                                                  if($3 != NULL) $$ = addSibling($1,$3);else $$=$1; /*yyerrok;*/ }
+                                                  if($3 != NULL) $$ = addSibling($1,$3);else $$=$1; yyerrok; }
                 | varDeclInit { $$ = $1; }
                 | varDeclList COMMA error {$$ = NULL;}
                 | error {$$ = NULL;}
@@ -131,7 +131,7 @@ varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Pro
 varDeclInit     : varDeclId {$$ = $1;}
                 | varDeclId COLON simpleExp     {$$ = $1;
                                                  $$->child[0] = $3;}
-                | error COLON simpleExp {$$ = NULL; /*yyerrok;*/}
+                | error COLON simpleExp {$$ = NULL; yyerrok;}
                 ;
 
 varDeclId       : ID                                    {$$ = newDeclNode(VarK,UndefinedType,$1);
@@ -147,7 +147,7 @@ varDeclId       : ID                                    {$$ = newDeclNode(VarK,U
                                                          $$->arraySize = $3->nValue;
                                                         }
                 | ID OPEN_BRACK error {$$ = NULL;}
-                | error CLOSE_BRACK {$$ = NULL; /*yyerrok;*/}                                        
+                | error CLOSE_BRACK {$$ = NULL; yyerrok;}                                        
                 ;
 
 typeSpec        : INT {$$ = Integer;}
@@ -251,6 +251,8 @@ compoundStmt    : OPEN_BRACE localDecls stmtList CLOSE_BRACE    { $$ = newStmtNo
                                                                   $$->attrSet = true;
                                                                   yyerrok;
                                                                 }
+                | OPEN_BRACE error stmtList CLOSE_BRACE { $$ = NULL; yyerrok; }
+                | OPEN_BRACE localDecls error CLOSE_BRACE { $$ = NULL; yyerrok; }
                 ;
 
 localDecls      : localDecls scopedVarDecl {//printf("In Local Decls Processing\n");
@@ -343,7 +345,7 @@ returnStmt      : RETURN SEMI                                   { $$ = newStmtNo
                 | RETURN exp SEMI                               { $$ = newStmtNode(ReturnK,$1,$2);
                                                                   $$->attr.string = $1->tokenStr;
                                                                   $$->attrSet = true;
-                                                                  /*yyerrok;*/
+                                                                  yyerrok;
                                                                 }
                 | RETURN error { $$ = NULL; /*yyerrok;*/ }
                 ;
@@ -372,8 +374,8 @@ exp             : mutable assignop exp                          { $$ = newExpNod
                 
                 | error assignop exp                      { $$ = NULL; /*yyerrok;*/ }
                 | mutable assignop error                  { $$ = NULL; }
-                | error INC                               { $$=NULL; /*yyerrok;*/ }
-                | error DEC                               { $$=NULL; /*yyerrok;*/ }
+                | error INC                               { $$=NULL; yyerrok; }
+                | error DEC                               { $$=NULL; yyerrok; }
                 ;
 
 assignop        : ASS {$$ = $1;}
@@ -399,6 +401,8 @@ andExp          : andExp AND unaryRelExp                        { $$ = newExpNod
                                                                 }
                 | unaryRelExp   {$$ = $1;}
                 | andExp AND error { $$ = NULL; }
+                | error AND unaryRelExp { $$ = NULL; }
+                | error AND error { $$ = NULL; }
                 ;
                 
 unaryRelExp     : NOT unaryRelExp                               { $$ = newExpNode(OpK,$1,$2);
@@ -459,6 +463,8 @@ mulExp          : mulExp mulOp unaryExp                         { $$ = newExpNod
                                                                 }
                 | unaryExp {$$ = $1;}
                 | mulExp mulOp error                      { $$ = NULL; }
+                | error mulOp error                      { $$ = NULL; }
+                | error mulOp unaryExp                      { $$ = NULL; }
                 ;
 
 mulOp           : MULT {$$ = $1;}
@@ -480,7 +486,7 @@ unaryOp         : MINUS {$$ = $1; $$->tokenClass = CHSIGN;}
                 | QUESTION {$$ = $1;}
                 ;
 
-factor          : immutable {$$ = $1;}
+factor          : immutable {$$ = $1; yyerrok;}
                 | mutable   {$$ = $1;}
                 ;
 
@@ -506,13 +512,16 @@ mutable         : ID                                            { $$ = newExpNod
 immutable       : OPEN_PAREN exp CLOSE_PAREN  { $$ = $2; yyerrok;} 
                 | call  {$$ = $1;}
                 | constant {$$ = $1;}
+                | OPEN_PAREN error {$$ = NULL; yyerrok;}
+                | error CLOSE_PAREN {$$ = NULL; yyerrok;}
                 ;
 
 call            : ID OPEN_PAREN args CLOSE_PAREN    { $$ = newExpNode(CallK,$1,$3);
                                                       $$->attr.name = $1->tokenStr;
                                                       $$->attrSet = true;
+                                                      
                                                     }
-                | error OPEN_PAREN                  { $$ = NULL; yyerrok; }                                    
+                | error OPEN_PAREN                  { $$ = NULL; yyerrok;}                                    
                 ;
 
 args            : argList   {$$ = $1;}
@@ -522,7 +531,7 @@ args            : argList   {$$ = $1;}
 argList         : argList COMMA exp     {//printf("In ArgList Processing\n");
                                         if($3 != NULL)$$ = addSibling($1,$3); else$$=$1; yyerrok;}
                 | exp                   {$$ = $1;}
-                | argList ',' error                       { $$=NULL; }
+                | argList COMMA error                       { $$=NULL; }
                 ;
 
 constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
