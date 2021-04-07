@@ -58,57 +58,58 @@ extern int yydebug;
     NUMCONST = 259,                /* NUMCONST  */
     CHARCONST = 260,               /* CHARCONST  */
     STRINGCONST = 261,             /* STRINGCONST  */
-    INT = 262,                     /* INT  */
-    BOOL = 263,                    /* BOOL  */
-    CHAR = 264,                    /* CHAR  */
-    IF = 265,                      /* IF  */
-    THEN = 266,                    /* THEN  */
-    ELSE = 267,                    /* ELSE  */
-    WHILE = 268,                   /* WHILE  */
-    DO = 269,                      /* DO  */
-    FOR = 270,                     /* FOR  */
-    TO = 271,                      /* TO  */
-    BY = 272,                      /* BY  */
-    RETURN = 273,                  /* RETURN  */
-    BREAK = 274,                   /* BREAK  */
-    STATIC = 275,                  /* STATIC  */
-    NOT = 276,                     /* NOT  */
-    AND = 277,                     /* AND  */
-    OR = 278,                      /* OR  */
-    TRUE = 279,                    /* TRUE  */
-    FALSE = 280,                   /* FALSE  */
-    OPEN_BRACE = 281,              /* OPEN_BRACE  */
-    CLOSE_BRACE = 282,             /* CLOSE_BRACE  */
-    OPEN_PAREN = 283,              /* OPEN_PAREN  */
-    CLOSE_PAREN = 284,             /* CLOSE_PAREN  */
-    SEMI = 285,                    /* SEMI  */
-    COMMA = 286,                   /* COMMA  */
-    LESS = 287,                    /* LESS  */
-    GREATER = 288,                 /* GREATER  */
-    LEQ = 289,                     /* LEQ  */
-    GEQ = 290,                     /* GEQ  */
-    COLON = 291,                   /* COLON  */
-    EQ = 292,                      /* EQ  */
-    DIV = 293,                     /* DIV  */
-    MULT = 294,                    /* MULT  */
-    MOD = 295,                     /* MOD  */
-    ADDASS = 296,                  /* ADDASS  */
-    ASS = 297,                     /* ASS  */
-    OPEN_BRACK = 298,              /* OPEN_BRACK  */
-    CLOSE_BRACK = 299,             /* CLOSE_BRACK  */
-    DEC = 300,                     /* DEC  */
-    INC = 301,                     /* INC  */
-    PLUS = 302,                    /* PLUS  */
-    NEQ = 303,                     /* NEQ  */
-    MIN = 304,                     /* MIN  */
-    MAX = 305,                     /* MAX  */
-    QUESTION = 306,                /* QUESTION  */
-    SUBASS = 307,                  /* SUBASS  */
-    MULASS = 308,                  /* MULASS  */
-    DIVASS = 309,                  /* DIVASS  */
-    MINUS = 310,                   /* MINUS  */
-    CHSIGN = 311,                  /* CHSIGN  */
-    SIZEOF = 312                   /* SIZEOF  */
+    BOOLCONST = 262,               /* BOOLCONST  */
+    INT = 263,                     /* INT  */
+    BOOL = 264,                    /* BOOL  */
+    CHAR = 265,                    /* CHAR  */
+    IF = 266,                      /* IF  */
+    THEN = 267,                    /* THEN  */
+    ELSE = 268,                    /* ELSE  */
+    WHILE = 269,                   /* WHILE  */
+    DO = 270,                      /* DO  */
+    FOR = 271,                     /* FOR  */
+    TO = 272,                      /* TO  */
+    BY = 273,                      /* BY  */
+    RETURN = 274,                  /* RETURN  */
+    BREAK = 275,                   /* BREAK  */
+    STATIC = 276,                  /* STATIC  */
+    NOT = 277,                     /* NOT  */
+    AND = 278,                     /* AND  */
+    OR = 279,                      /* OR  */
+    TRUE = 280,                    /* TRUE  */
+    FALSE = 281,                   /* FALSE  */
+    OPEN_BRACE = 282,              /* OPEN_BRACE  */
+    CLOSE_BRACE = 283,             /* CLOSE_BRACE  */
+    OPEN_PAREN = 284,              /* OPEN_PAREN  */
+    CLOSE_PAREN = 285,             /* CLOSE_PAREN  */
+    SEMI = 286,                    /* SEMI  */
+    COMMA = 287,                   /* COMMA  */
+    LESS = 288,                    /* LESS  */
+    GREATER = 289,                 /* GREATER  */
+    LEQ = 290,                     /* LEQ  */
+    GEQ = 291,                     /* GEQ  */
+    COLON = 292,                   /* COLON  */
+    EQ = 293,                      /* EQ  */
+    DIV = 294,                     /* DIV  */
+    MULT = 295,                    /* MULT  */
+    MOD = 296,                     /* MOD  */
+    ADDASS = 297,                  /* ADDASS  */
+    ASS = 298,                     /* ASS  */
+    OPEN_BRACK = 299,              /* OPEN_BRACK  */
+    CLOSE_BRACK = 300,             /* CLOSE_BRACK  */
+    DEC = 301,                     /* DEC  */
+    INC = 302,                     /* INC  */
+    PLUS = 303,                    /* PLUS  */
+    NEQ = 304,                     /* NEQ  */
+    MIN = 305,                     /* MIN  */
+    MAX = 306,                     /* MAX  */
+    QUESTION = 307,                /* QUESTION  */
+    SUBASS = 308,                  /* SUBASS  */
+    MULASS = 309,                  /* MULASS  */
+    DIVASS = 310,                  /* DIVASS  */
+    MINUS = 311,                   /* MINUS  */
+    CHSIGN = 312,                  /* CHSIGN  */
+    SIZEOF = 313                   /* SIZEOF  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -123,7 +124,7 @@ union YYSTYPE
     TokenData *tokenData;
     TreeNode *treenode;
 
-#line 127 "parser.tab.h"
+#line 128 "parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

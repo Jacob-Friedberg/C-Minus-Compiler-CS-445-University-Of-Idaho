@@ -190,7 +190,7 @@ static int setValue(int lineNumber, int tokenClass, char *svalue)
     {
         //throw a warning ignoring all characters past the end
         //Subtract 2 from the strlen for the ' '
-        if( ((int)strlen(svalue) -2) != 1)
+        if( ((int)strlen(svalue) -2) != 1 && ((int)strlen(svalue) -2) != 0)
         {
             printf("WARNING(%d): character is %d characters long and not a single character: '%s'.  The first char will be used.\n",
                 lineNumber,
@@ -198,6 +198,14 @@ static int setValue(int lineNumber, int tokenClass, char *svalue)
                 svalue);
             NUM_WARNINGS++;
         }
+        else if(((int)strlen(svalue) -2) == 0)
+        {
+                printf("ERROR(%d): Empty character ''.  Characters ignored.\n",
+                lineNumber);
+                NUM_ERRORS++;
+            
+        }
+
         //yylval.tokenData->cValue = svalue[1];
         yylval.tokenData->sValue = strdup(svalue);
         convertEscapeChar(yylval.tokenData->sValue,yylval.tokenData->sValue);
@@ -216,6 +224,7 @@ static int setValue(int lineNumber, int tokenClass, char *svalue)
     {
         yylval.tokenData->nValue = 0; 
     }
+    
 
     return tokenClass;
 }
@@ -307,7 +316,9 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 {comment}                 {;}
 {stringConst}             {return setValue(lineNumber,STRINGCONST,yytext);}
 {escapedStringConst}      {return setValue(lineNumber,STRINGCONST,yytext);}
-{charconst}               {return setValue(lineNumber,CHARCONST,yytext);}
+{charconst}               {if(((int)strlen(yytext)-2)!=0) return setValue(lineNumber,CHARCONST,yytext);else printf("ERROR(%d): Empty character ''.  Characters ignored.\n",
+                                                                                                                lineNumber);
+                                                                                                                NUM_ERRORS++;}
 {escapedCharConst}        {return setValue(lineNumber,CHARCONST,yytext);}
 {numbers}+                {return setValue(lineNumber,NUMCONST,yytext);}
 {letters}|{letterDig}*    {return setValue(lineNumber,ID,yytext);}

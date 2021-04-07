@@ -54,7 +54,7 @@ TreeNode *syntaxTree;
 }
 
 /*tokens are our terminals*/ 
-%token <tokenData> ID NUMCONST CHARCONST STRINGCONST 
+%token <tokenData> ID NUMCONST CHARCONST STRINGCONST BOOLCONST
 %token <tokenData> INT BOOL CHAR IF THEN ELSE WHILE DO FOR TO 
 %token <tokenData> BY RETURN BREAK STATIC NOT AND OR TRUE FALSE
 %token <tokenData> OPEN_BRACE CLOSE_BRACE OPEN_PAREN CLOSE_PAREN
@@ -108,7 +108,7 @@ decl            : varDecl {$$ = $1;}
 /*------------------------4-9-------------------------------*/
 varDecl         : typeSpec varDeclList SEMI { setType($2,$1,false); $$ = $2;}
                 | error varDeclList SEMI {$$ = NULL; yyerrok;}
-                | typeSpec error SEMI {$$ = NULL; /*yyerrok;*/ /*yyerrok;*/}
+                | typeSpec error SEMI {$$ = NULL; yyerrok; }
                 ;
                 /*FIX STATIC LATER*/
 scopedVarDecl   : STATIC typeSpec varDeclList SEMI  { setType($3,$2,true);
@@ -119,6 +119,7 @@ scopedVarDecl   : STATIC typeSpec varDeclList SEMI  { setType($3,$2,true);
                                                 $$ = $2;
                                                 yyerrok;
                                             } 
+                | typeSpec error SEMI {$$ = NULL; yyerrok;}
                 ;
 
 varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Processing\n");
@@ -186,14 +187,14 @@ paramList       : paramList SEMI paramTypeList {//printf("In ParamList Processin
                 ;
 
 paramTypeList   : typeSpec paramIdList  {setType($2,$1,false); $$ = $2;}
-                | typeSpec error  {$$ = NULL;}
+                | typeSpec error  {$$ = NULL; }
                 ;
 
 paramIdList     : paramIdList COMMA paramId { 
                                               if($3 != NULL) $$ = addSibling($1,$3);
                                               else
                                               $$ = $1;
-                                              /*yyerrok;*/
+                                              yyerrok;
                                               }
                 | paramId {$$ = $1;}
                 | paramId COMMA error {$$ = NULL;}
@@ -210,6 +211,7 @@ paramId         : ID                        {$$ = newDeclNode(ParamK,UndefinedTy
                                             $$->attrSet = true; 
                                             $$->isArray = true;                                              
                                             }
+                | error OPEN_BRACK {$$ = NULL; yyerrok;}
                 ;
 /*------------------------16-25-------------------------------*/
 /*
@@ -558,12 +560,14 @@ constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
                                   $$->attrSet = true;
                                   $$->expType = Boolean; 
                                   $$->unionType = value;
+                                  $1->tokenClass = BOOLCONST;
                                 }
                 | FALSE         { $$ = newExpNode(ConstantK,$1);
                                   $$->attr.value = $1->nValue;
                                   $$->attrSet = true;
                                   $$->expType = Boolean;
                                   $$->unionType = value; 
+                                  $1->tokenClass = BOOLCONST;
                                 }
                 ;
 
