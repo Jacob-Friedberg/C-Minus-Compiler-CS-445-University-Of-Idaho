@@ -324,4 +324,5 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 {letters}|{letterDig}*    {return setValue(lineNumber,ID,yytext);}
 .                         {printf("ERROR(%d): Invalid or misplaced input character: '%c'. Character Ignored.\n",lineNumber,yytext[0]); NUM_ERRORS++;}
 
+<INITIAL><<EOF>>          {line = lineNumber; return 0;}
 %%

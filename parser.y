@@ -44,7 +44,7 @@ TreeNode *syntaxTree;
 
 
 */
-%define parse.error detailed
+%define parse.error verbose
 // this is included in the tab.h file
 // so scanType.h must be included before the tab.h file!!!!
 %union {
@@ -92,6 +92,7 @@ TreeNode *syntaxTree;
 /*------------------------START OF GRAMMER-------------------------------*/
 /*------------------------1-3-------------------------------*/
 program         : declList {syntaxTree = $1;}
+                
                 ;
 
 declList        : declList decl  { //printf("In DeclList Processing\n");
@@ -103,7 +104,7 @@ declList        : declList decl  { //printf("In DeclList Processing\n");
 
 decl            : varDecl {$$ = $1;}
                 | funDecl {$$ = $1;}
-                | error {$$ = NULL;}
+                | error {$$ = NULL; yyerrok;}
                 ;  
 /*------------------------4-9-------------------------------*/
 varDecl         : typeSpec varDeclList SEMI { setType($2,$1,false); $$ = $2;}
