@@ -6,7 +6,12 @@
 #include <ctype.h>
 
 static int lineNumber = 1;
-int numErrors;    // ERR err count
+
+int line;
+char *lastToken;
+
+extern int NUM_ERRORS;    // ERR err count
+extern int NUM_WARNINGS;
 
 // //Convert a string with escape sequences from:inPtr to:outPtr
 // static void convertEscapeStr2(char *inPtr, char *outPtr)
@@ -166,6 +171,10 @@ static void convertEscapeChar(char *inBuff, char *outBuff)
 
 static int setValue(int lineNumber, int tokenClass, char *svalue)
 {
+    //set the last token to something
+    lastToken = svalue;
+    line = lineNumber;
+
     // create the pass-back data space
     yylval.tokenData = new TokenData;
 
@@ -293,6 +302,7 @@ false                     {return setValue(lineNumber,FALSE,yytext);}
 {escapedCharConst}        {return setValue(lineNumber,CHARCONST,yytext);}
 {numbers}+                {return setValue(lineNumber,NUMCONST,yytext);}
 {letters}|{letterDig}*    {return setValue(lineNumber,ID,yytext);}
-.                         {printf("ERROR(%d): Invalid or misplaced input character: '%c'. Character Ignored.\n",lineNumber,yytext[0]);}
+.                         {printf("ERROR(%d): Invalid or misplaced input character: '%c'. Character Ignored.\n",lineNumber,yytext[0]); NUM_ERRORS++;}
 
+<INITIAL><<EOF>>         {line = lineNumber; return 0;}
 %%

@@ -10,7 +10,7 @@ CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic -g
 LEX = flex
 #-Wcounterexamples
 BISONFLAGS = -v  -t -d
-TARNAME = pas04.tar
+TARNAME = pas05.tar
 
 $(BIN): $(OBJS)
 	$(CC) $(CCFLAGS) $(OBJS) $(LIBS) -o $(BIN)

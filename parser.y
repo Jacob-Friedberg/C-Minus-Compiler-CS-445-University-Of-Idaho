@@ -9,6 +9,7 @@
 #include "ourgetopt.h"
 #include "symbolTable.h"
 #include "semantic.h"
+#include "yyerror.h"
 
 
 
@@ -19,10 +20,7 @@ extern FILE *yyin;
 extern int yydebug;
 
 #define YYERROR_VERBOSE
-void yyerror(const char *msg)
-{
-    printf("ERROR: %s\n", msg);
-}
+
 
 static char *toUpperString(char *str)
 {
@@ -609,6 +607,9 @@ int main(int argc, char *argv[])
     extern int optind;
     extern int NUM_WARNINGS;
     extern int NUM_ERRORS;
+    
+    initErrorProcessing();
+
     while(1)
     {
         //Picking off the options we want. p
@@ -663,7 +664,7 @@ int main(int argc, char *argv[])
     yyparse();
     SymbolTable *symTab; 
     symTab = new SymbolTable();
-    if(printflag)
+    if(printflag && NUM_ERRORS == 0)
     {
       checkTree2(symTab,syntaxTree,false,NULL);
       treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
