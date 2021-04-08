@@ -475,11 +475,12 @@ void printTypedTree(TreeNode *node, int indentLevel)
     }
 }
 
+extern int NUM_ERRORS;
 // add a TreeNode to a list of siblings.
 // Adding a NULL to the list is probably a programming error!
 TreeNode *addSibling(TreeNode *t, TreeNode *s)
 {
-    if (s == NULL)
+    if (s == NULL && NUM_ERRORS == 0)
     {
         printf("ERROR(SYSTEM): never add a NULL to a sibling list.\n");
         exit(1);

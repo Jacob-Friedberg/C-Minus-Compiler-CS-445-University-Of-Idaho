@@ -1,5 +1,19 @@
 // C-S21
-//
-// Test all the basic elements of C-
-//
-//
+cat(int x) int;
+
+main()
+{
+        dog();
+        dog(111);
+        dog(while);
+        dog(while, while);
+        dog(dog(),cat());
+
+        dog(;
+        dog);
+}
+
+int x, y;
+
+cat(int x) int;
+int x, 77;
