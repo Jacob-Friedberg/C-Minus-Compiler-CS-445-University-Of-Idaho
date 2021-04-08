@@ -112,10 +112,17 @@ void initErrorProcessing()
     niceTokenNameMap["CLOSE_PAREN"] = (char *)"')'";
     niceTokenNameMap["OPEN_BRACE"] = (char *)"'{'";
     niceTokenNameMap["CLOSE_BRACE"] = (char *)"'}'";
+    niceTokenNameMap["OPEN_BRACK"] = (char *)"'['";
+    niceTokenNameMap["CLOSE_BRACK"] = (char *)"']'";
     niceTokenNameMap["COMMA"] = (char *)"','";
     niceTokenNameMap["MOD"] = (char *)"'%'";
     niceTokenNameMap["DIV"] = (char *)"'/'";
     niceTokenNameMap["TRUE"] = (char *)"Boolean constant";
+    niceTokenNameMap["FALSE"] = (char *)"Boolean constant";
+    niceTokenNameMap["COLON"] = (char *)"':'";
+    niceTokenNameMap["PLUS"] = (char *)"'+'";
+    niceTokenNameMap["MINUS"] = (char *)"'-'";
+    niceTokenNameMap["MULT"] = (char *)"'*'";
     niceTokenNameMap["$end"] = (char *)"end of input";
 }
 

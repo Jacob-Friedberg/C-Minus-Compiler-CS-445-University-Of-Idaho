@@ -128,7 +128,7 @@ varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Pro
 
 varDeclInit     : varDeclId {$$ = $1;}
                 | varDeclId COLON simpleExp     {$$ = $1;
-                                                 $$->child[0] = $3;}
+                                                 if($$ != NULL && $3 != NULL)$$->child[0] = $3;}
                 | error COLON simpleExp {$$ = NULL; yyerrok;}
                 ;
 
