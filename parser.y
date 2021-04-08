@@ -468,7 +468,7 @@ unaryOp         : MINUS {$$ = $1; $$->tokenClass = CHSIGN;}
                 | QUESTION {$$ = $1;}
                 ;
 
-factor          : immutable {$$ = $1;}
+factor          : immutable {$$ = $1; }
                 | mutable   {$$ = $1;}
                 ;
 
@@ -500,7 +500,7 @@ call            : ID OPEN_PAREN args CLOSE_PAREN    { $$ = newExpNode(CallK,$1,$
                                                       $$->attrSet = true;
                                                       
                                                     }
-                | OPEN_PAREN error {$$ = NULL; yyerrok;}
+                | error OPEN_PAREN {$$ = NULL; yyerrok;}
 
                 ;
 
