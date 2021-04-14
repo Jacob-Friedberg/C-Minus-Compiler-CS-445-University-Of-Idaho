@@ -213,6 +213,9 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
     static TreeNode *headOfTree = NULL;
     static TreeNode *tailOfTree = NULL;
     static bool returnStmtFound = false;
+    
+    static int globalOffset = 0;
+    int localOffset;
 
     //Counts how deep we are in nested loops(for and while)
     //0 means not in a loop >0 means in a loop. This specific for the break stmt
