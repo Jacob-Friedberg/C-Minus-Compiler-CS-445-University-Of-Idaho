@@ -23,6 +23,7 @@ void ioLibrary(SymbolTable *symTab);
 int NUM_ERRORS = 0;
 int NUM_WARNINGS = 0;
 
+
 void foo(void *x)
 {
     dumpNode((treeNode *)x);
@@ -70,6 +71,7 @@ void ioLibrary(SymbolTable *symTab)
     childIoTreeNode->attr.name = strdup("*dummy*");
     childIoTreeNode->lineno = -1;
     childIoTreeNode->isUsed = true;
+    childIoTreeNode->isIo = true;
     ioTreeNode->isIo = true;
     //create the funcdef and attach the param node
     ioTreeNode = newDeclNode(FuncK, Void, NULL, childIoTreeNode);
@@ -88,6 +90,7 @@ void ioLibrary(SymbolTable *symTab)
     childIoTreeNode->attr.name = strdup("*dummy*");
     childIoTreeNode->lineno = -1;
     childIoTreeNode->isUsed = true;
+    childIoTreeNode->isIo = true;
     ioTreeNode->isIo = true;
     //create the funcdef and attach the param node
     ioTreeNode = newDeclNode(FuncK, Void, NULL, childIoTreeNode);
@@ -106,6 +109,7 @@ void ioLibrary(SymbolTable *symTab)
     childIoTreeNode->attr.name = strdup("*dummy*");
     childIoTreeNode->lineno = -1;
     childIoTreeNode->isUsed = true;
+    childIoTreeNode->isIo = true;
     ioTreeNode->isIo = true;
     //create the funcdef and attach the param node
     ioTreeNode = newDeclNode(FuncK, Void, NULL, childIoTreeNode);
@@ -203,6 +207,9 @@ void checkChildren(TreeNode *node, SymbolTable *symTab, bool suppressChildScope)
     }
 }
 
+
+int localOffset=0;
+int globalOffset=0;
 void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, TreeNode *parent)
 {
     char typing[64];
@@ -213,13 +220,15 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
     static TreeNode *headOfTree = NULL;
     static TreeNode *tailOfTree = NULL;
     static bool returnStmtFound = false;
-    
-    static int globalOffset = 0;
-    int localOffset;
+
+    static int compound_size = 0;
+
+ 
 
     //Counts how deep we are in nested loops(for and while)
     //0 means not in a loop >0 means in a loop. This specific for the break stmt
     static int loopDepth = 0;
+    //symTab->debug(true);
 
     static TreeNode *functionNodePtr = NULL;
 
@@ -323,8 +332,11 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
             case CompoundK:
                 if (!parentSuppressScope)
                     symTab->enter(std::string("THIS IS A COMPOUND"));
-
+                
+                
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+
+                node->size = compound_size;
 
                 //Dont do this for functions
                 //HACK
@@ -488,6 +500,18 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 if (symTab->insert(std::string(node->attr.name), (void *)node))
                 {
                     node->depth = symTab->depth();
+
+                    //we are at the global scope so set our scope to global
+                    //Assuming anything other than global scope is a local. PROB WRONG!!!
+                    if(node->depth == 1)
+                    {
+                        node->scope = Global;
+                    }
+                    else if(node->depth > 1)
+                    {
+                        node->scope = Local;
+                    }
+
                     node->isUsed = false;
                     //Special handleing for the case of init variables in for loops
                     if (node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
@@ -511,8 +535,12 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 //----INITILIZATION OF A VARAIBLE IS HERE----
                 //Type checking the initilization variable, In addition checks if it is a constant.
                 //Sets init flag
+                //Pass down your scope to the child.
                 if (node->child[0] != NULL)
                 {
+                    //Set the child scope to that of the parent.
+                    node->child[0]->scope = node->scope;
+
                     //HACK: special case of initilzing to itself.
 
                     if ((node->child[0]->tokenStr != NULL && node->tokenStr != NULL) && strcmp(node->child[0]->tokenStr, node->tokenStr) == 0)
@@ -591,6 +619,10 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     break;
                 }
 
+                
+
+                localOffset = -2;
+
                 //Set func flag
                 node->isFunc = true;
 
@@ -616,6 +648,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 }
                 //prob shouldn't enter regardless if there is an error.
                 symTab->enter(std::string(node->attr.string));
+
 
                 //store our function node for typechecking later in the children
                 if (node->isFunc && !node->isIo)
@@ -706,6 +739,14 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 }
                 node->depth = symTab->depth();
 
+                //Paramk Size for compound stmts
+                if(node->isArray && !node->isIo)
+                {
+                    compound_size -=2;
+                }
+                else if(!node->isArray && !node->isIo)
+                    compound_size--;
+
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
 
                 node->parent->numParams++;
@@ -730,6 +771,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 if (node->op == OPEN_BRACK)
                 {
                     //Setting the exptype of [ array to that of its Identifier.
+                    
                     if (node->child[0] != NULL)
                     {
                         node->expType = node->child[0]->expType;
@@ -796,6 +838,9 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 //Indicate we are constant
                 //SizeOf prob needs to be a constant
                 node->isConst = true;
+                //BOLD ASSUMPTION THAT ALL CONST ARE GLOBAL IN SCOPE
+                node->scope = Global;
+                
 
                 break;
 
@@ -836,8 +881,10 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     //     node->expType = UndefinedType;
                     // }
                     // else
+                    //promote attributes we want from the lookup into the node
                     node->expType = lookupNode->expType;
-
+                    node->size = lookupNode->size;
+                    node->scope = lookupNode->scope;
                     node->isArray = lookupNode->isArray;
                     node->isStatic = lookupNode->isStatic;
                     node->isFunc = lookupNode->isFunc;

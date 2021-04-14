@@ -70,7 +70,7 @@ typedef enum
 }ExpType;
 
 // What kind of scoping is used?  (decided during typing)
-enum VarKind
+enum ScopeKind
 {
     None,
     Local,
@@ -118,7 +118,8 @@ typedef struct treeNode
     int numParams;
     bool undeclared;
     bool isIo;
-    
+    ScopeKind scope;
+    int loc; // memory location
     char *tokenStr;
     bool isInitErrorThrown;
     OpKind op;

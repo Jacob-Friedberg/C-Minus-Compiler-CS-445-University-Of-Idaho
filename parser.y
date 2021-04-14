@@ -128,7 +128,12 @@ varDeclList     : varDeclList COMMA varDeclInit   { //printf("In VarDeclList Pro
 
 varDeclInit     : varDeclId {$$ = $1;}
                 | varDeclId COLON simpleExp     {$$ = $1;
-                                                 if($$ != NULL && $3 != NULL)$$->child[0] = $3;}
+                                                 if($$ != NULL && $3 != NULL)
+                                                 {
+                                                    $$->child[0] = $3;
+                                                    $3->size = $$->size;
+                                                 }
+                                                 }
                 | error COLON simpleExp {$$ = NULL; yyerrok;}
                 ;
 
@@ -534,6 +539,7 @@ constant        : NUMCONST      { $$ = newExpNode(ConstantK,$1);
                                   $$->attrSet = true;
                                   $$->expType = Char;
                                   $$->isArray = true; 
+                                  $$->size = strlen($1->sValue) + 1; /*size + 1 for mem locs*/
                                   $$->unionType = string;
                                 }
                 | TRUE          { $$ = newExpNode(ConstantK,$1);
@@ -679,6 +685,7 @@ int main(int argc, char *argv[])
                     printFlag = true;
                     break;
                 case 'M':
+                    printFlag = true;
                     memFlag = true;
                     break;
                 default:
@@ -732,11 +739,11 @@ int main(int argc, char *argv[])
         NUM_ERRORS++;
       }
 
-        if(NUM_ERRORS == 0 && memFlag)
+        if(memFlag)
         {
           printTypedTree(syntaxTree,0, PRINT_MEM_LOC);
         }
-        else if(NUM_ERRORS == 0 && !memFlag)
+        else if(!memFlag)
         {
           printTypedTree(syntaxTree,0, DONT_PRINT_MEM_LOC);
         }
@@ -745,6 +752,13 @@ int main(int argc, char *argv[])
       printf("Number of warnings: %d\n",NUM_WARNINGS);
       printf("Number of errors: %d\n",NUM_ERRORS);
 
+    }
+    else if(printFlagOld && NUM_ERRORS == 0)
+    {
+     
+        printTree(syntaxTree,0);
+        printf("Number of warnings: %d\n",NUM_WARNINGS);
+        printf("Number of errors: %d\n",NUM_ERRORS);
     }
     else
     {

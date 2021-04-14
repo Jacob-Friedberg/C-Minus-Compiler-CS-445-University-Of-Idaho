@@ -6,6 +6,7 @@
 // save TokenData block!!
 
 void convertExpTypeToString(ExpType type, char *string);
+void convertScopeKindToString(ScopeKind scope, char *string);
 TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c0, TreeNode *c1, TreeNode *c2)
 {
     //allocate space for the node
@@ -24,8 +25,8 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->subkind.decl = kind;
 
     treeNode->expType = type;
-    
-    if(token != NULL)
+
+    if (token != NULL)
         treeNode->tokenStr = token->tokenStr;
     treeNode->isFunc = false;
     treeNode->isConst = false;
@@ -33,7 +34,7 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->numParams = 0;
     treeNode->isUsed = false;
     treeNode->isIo = false;
-    
+    treeNode->scope = None;
     treeNode->size = -99;
     treeNode->attrSet = false;
 
@@ -54,7 +55,7 @@ TreeNode *newStmtNode(StmtKind kind, TokenData *token, TreeNode *c0, TreeNode *c
 
     treeNode->nodekind = StmtK;
 
-    if(token != NULL)
+    if (token != NULL)
         treeNode->tokenStr = token->tokenStr;
     treeNode->subkind.stmt = kind;
     treeNode->isRangeK = false;
@@ -84,8 +85,8 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
         treeNode->lineno = token->lineNum;
 
     treeNode->nodekind = ExpK;
-    
-    if(token != NULL)
+
+    if (token != NULL)
         treeNode->tokenStr = token->tokenStr;
     treeNode->subkind.exp = kind;
     treeNode->isFunc = false;
@@ -290,6 +291,7 @@ void printTree(TreeNode *node, int indentLevel)
 void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
 {
     char typing[64];
+    char scoping[64];
     int sibling_count = 1;
     while (node != NULL)
     {
@@ -300,6 +302,7 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
         // }
         // else
         convertExpTypeToString(node->expType, typing);
+        convertScopeKindToString(node->scope, scoping);
 
         if (node->nodekind == StmtK)
         {
@@ -318,7 +321,11 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                 printf("For [line: %d]\n", node->lineno);
                 break;
             case CompoundK:
-                printf("Compound [line: %d]\n", node->lineno);
+                printf("Compound [mem: %s loc: %d size: %d] [line: %d]\n",
+                scoping,
+                node->loc,
+                node->size,
+                node->lineno);
                 break;
             case ReturnK:
                 printf("Return [line: %d]\n", node->lineno);
@@ -371,12 +378,29 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
             case ConstantK:
                 if (strcmp(typing, "char") == 0)
                 {
-                    if (node->isArray)
+                    if (memPrintFlag)
                     {
-                        printf("Const is array \"%s\" of type %s [line: %d]\n", node->attr.string, typing, node->lineno);
+                        if (node->isArray)
+                        {
+                            printf("Const \"%s\" [mem: %s loc: -999 size: %d] of array of type %s [line: %d]\n",
+                                   node->attr.string,
+                                   scoping,
+                                   node->size,
+                                   typing,
+                                   node->lineno);
+                        }
+                        else
+                            printf("Const '%c' of type %s [line: %d]\n", node->attr.value, typing, node->lineno);
                     }
                     else
-                        printf("Const '%c' of type %s [line: %d]\n", node->attr.value, typing, node->lineno);
+                    {
+                        if (node->isArray)
+                        {
+                            printf("Const is array \"%s\" of type %s [line: %d]\n", node->attr.string, typing, node->lineno);
+                        }
+                        else
+                            printf("Const '%c' of type %s [line: %d]\n", node->attr.value, typing, node->lineno);
+                    }
                 }
                 else if (strcmp(typing, "bool") == 0)
                 {
@@ -386,12 +410,40 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                     printf("Const %d of type %s [line: %d]\n", node->attr.value, typing, node->lineno);
                 break;
             case IdK:
-                if (node->expType == UndefinedType)
+
+                if (memPrintFlag)
                 {
-                    printf("Id: %s of undefined type [line: %d]\n", node->attr.name, node->lineno);
+                    //we are not an array
+                    if (!node->isArray)
+                    {
+                        if (node->expType == UndefinedType)
+                        {
+                            printf("Id: %s of undefined type [line: %d]\n", node->attr.name, node->lineno);
+                        }
+                        else
+                            printf("Id: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                    }
+                    //we are an array
+                    else
+                    {
+                        printf("Id: %s [mem: %s loc: -999 size: %d] of array of type %s [line: %d]\n",
+                               node->attr.name,
+                               scoping,
+                               node->size,
+                               typing,
+                               node->lineno);
+                    }
                 }
                 else
-                    printf("Id: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                {
+                    if (node->expType == UndefinedType)
+                    {
+                        printf("Id: %s of undefined type [line: %d]\n", node->attr.name, node->lineno);
+                    }
+                    else
+                        printf("Id: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                }
+
                 break;
             case AssignK:
                 printf("Assign: %s of type %s [line: %d]\n", node->attr.string, typing, node->lineno);
@@ -538,6 +590,32 @@ void convertExpTypeToString(ExpType type, char *string)
         break;
     default:
         printf("Undefined EXP given to conversion function\n");
+        strcpy(string, "FAILURE");
+        break;
+    }
+}
+
+void convertScopeKindToString(ScopeKind scope, char *string)
+{
+    switch (scope)
+    {
+    case None:
+        strcpy(string, "None");
+        break;
+    case Local:
+        strcpy(string, "Local");
+        break;
+    case Global:
+        strcpy(string, "Global");
+        break;
+    case Parameter:
+        strcpy(string, "Parameter");
+        break;
+    case LocalStatic:
+        strcpy(string, "Local Static");
+        break;
+    default:
+        printf("Undefined SCOPE given to conversion function\n");
         strcpy(string, "FAILURE");
         break;
     }
