@@ -24,7 +24,7 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->subkind.decl = kind;
 
     treeNode->expType = type;
-
+    
     if(token != NULL)
         treeNode->tokenStr = token->tokenStr;
     treeNode->isFunc = false;
@@ -33,7 +33,8 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->numParams = 0;
     treeNode->isUsed = false;
     treeNode->isIo = false;
-
+    
+    treeNode->size = -99;
     treeNode->attrSet = false;
 
     return treeNode;
@@ -286,7 +287,7 @@ void printTree(TreeNode *node, int indentLevel)
     }
 }
 
-void printTypedTree(TreeNode *node, int indentLevel)
+void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
 {
     char typing[64];
     int sibling_count = 1;
@@ -458,7 +459,7 @@ void printTypedTree(TreeNode *node, int indentLevel)
             {
                 printSpaces(indentLevel + 1);
                 printf("Child: %d  ", i);
-                printTypedTree(node->child[i], indentLevel + 1);
+                printTypedTree(node->child[i], indentLevel + 1, memPrintFlag);
             }
             //else
             //printf("child:%d was NULL at indent %d\n", i, indentLevel);

@@ -118,6 +118,7 @@ typedef struct treeNode
     int numParams;
     bool undeclared;
     bool isIo;
+    
     char *tokenStr;
     bool isInitErrorThrown;
     OpKind op;
@@ -126,7 +127,7 @@ typedef struct treeNode
     bool attrSet;
     ExpType expType; // used when ExpK for type checking
     bool isArray;    // is this an array
-    int arraySize;
+    int size;
     bool isStatic;   // is staticly allocated?
     bool isUsed;
     bool isInit;
@@ -155,7 +156,7 @@ TreeNode *newExpNode(ExpKind kind,
                      TreeNode *c2 = NULL);
 
 void printTree(TreeNode *node,int indentLevel);
-void printTypedTree(TreeNode *node,int indentLevel);
+void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag);
 void dumpNode(TreeNode *node);
 TreeNode *addSibling(TreeNode *t, TreeNode *s);
 void setType(TreeNode *t, ExpType type, bool isStatic);

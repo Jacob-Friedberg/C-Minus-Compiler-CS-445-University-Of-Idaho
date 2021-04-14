@@ -136,13 +136,15 @@ varDeclId       : ID                                    {$$ = newDeclNode(VarK,U
                                                          $$->attr.name = $1->tokenStr;
                                                          $$->isArray = false;
                                                          $$->attrSet = true;
+                                                         $$->size = 1;
+
 
                                                         }
                 | ID OPEN_BRACK NUMCONST CLOSE_BRACK    {$$ = newDeclNode(VarK,UndefinedType,$1);
                                                          $$->attr.name = $1->tokenStr;
                                                          $$->attrSet = true;
                                                          $$->isArray = true;
-                                                         $$->arraySize = $3->nValue;
+                                                         $$->size = $3->nValue + 1;
                                                         }
                 | ID OPEN_BRACK error {$$= NULL;}
                 | error CLOSE_BRACK {$$ = NULL; yyerrok;}
@@ -642,11 +644,18 @@ extern int yydebug;
 
 
 
+
+#define PRINT_MEM_LOC true
+
+#define DONT_PRINT_MEM_LOC false
+
 int main(int argc, char *argv[])
 {
     char c;
-    bool printflag = false;
-    bool errorflag = false;
+    bool printFlag = false;
+    bool printFlagOld = false;
+    bool errorFlag = false;
+    bool memFlag = false;
     extern int optind;
     extern int NUM_WARNINGS;
     extern int NUM_ERRORS;
@@ -656,18 +665,21 @@ int main(int argc, char *argv[])
     while(1)
     {
         //Picking off the options we want. p
-        while((c = ourGetopt(argc,argv,(char*)"Ppd")) != -1)
+        while((c = ourGetopt(argc,argv,(char*)"PpdM")) != -1)
         {
             switch(c)
             {
                 case 'd':
-                    errorflag = true;
+                    errorFlag = true;
                     break;
                 case 'p':
-                    printflag = true;
+                    printFlagOld = true;
                     break;
                 case 'P':
-                    printflag = true;
+                    printFlag = true;
+                    break;
+                case 'M':
+                    memFlag = true;
                     break;
                 default:
                     fprintf(stderr,"Usage: -p(print tree) -d(yydebug enable) are the only supported options\n./c- -[p|d] -[d|p] [FILENAME]\n");
@@ -700,14 +712,14 @@ int main(int argc, char *argv[])
             break;
         }
     }
-    if(errorflag)
+    if(errorFlag)
         yydebug = 1;
 
     // do the parsing
     yyparse();
     SymbolTable *symTab; 
     symTab = new SymbolTable();
-    if(printflag && NUM_ERRORS == 0)
+    if(printFlag && NUM_ERRORS == 0)
     {
       checkTree2(symTab,syntaxTree,false,NULL);
       treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
@@ -720,8 +732,15 @@ int main(int argc, char *argv[])
         NUM_ERRORS++;
       }
 
-        if(NUM_ERRORS == 0)
-          printTypedTree(syntaxTree,0);
+        if(NUM_ERRORS == 0 && memFlag)
+        {
+          printTypedTree(syntaxTree,0, PRINT_MEM_LOC);
+        }
+        else if(NUM_ERRORS == 0 && !memFlag)
+        {
+          printTypedTree(syntaxTree,0, DONT_PRINT_MEM_LOC);
+        }
+          
 
       printf("Number of warnings: %d\n",NUM_WARNINGS);
       printf("Number of errors: %d\n",NUM_ERRORS);
