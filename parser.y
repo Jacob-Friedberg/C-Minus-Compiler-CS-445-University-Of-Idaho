@@ -131,7 +131,7 @@ varDeclInit     : varDeclId {$$ = $1;}
                                                  if($$ != NULL && $3 != NULL)
                                                  {
                                                     $$->child[0] = $3;
-                                                    $3->size = $$->size;
+                                                    $$->size = $3->size;
                                                  }
                                                  }
                 | error COLON simpleExp {$$ = NULL; yyerrok;}
@@ -665,6 +665,7 @@ int main(int argc, char *argv[])
     extern int optind;
     extern int NUM_WARNINGS;
     extern int NUM_ERRORS;
+    extern int globalOffset;
     
     initErrorProcessing();
 
@@ -742,6 +743,7 @@ int main(int argc, char *argv[])
         if(memFlag)
         {
           printTypedTree(syntaxTree,0, PRINT_MEM_LOC);
+          printf("Offset for end of global space: %d\n",globalOffset);
         }
         else if(!memFlag)
         {

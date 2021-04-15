@@ -322,10 +322,10 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                 break;
             case CompoundK:
                 printf("Compound [mem: %s loc: %d size: %d] [line: %d]\n",
-                scoping,
-                node->loc,
-                node->size,
-                node->lineno);
+                       scoping,
+                       node->loc,
+                       node->size,
+                       node->lineno);
                 break;
             case ReturnK:
                 printf("Return [line: %d]\n", node->lineno);
@@ -382,9 +382,10 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                     {
                         if (node->isArray)
                         {
-                            printf("Const \"%s\" [mem: %s loc: -999 size: %d] of array of type %s [line: %d]\n",
+                            printf("Const \"%s\" [mem: %s loc: %d size: %d] of array of type %s [line: %d]\n",
                                    node->attr.string,
                                    scoping,
+                                   node->loc - 1,
                                    node->size,
                                    typing,
                                    node->lineno);
@@ -426,9 +427,11 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                     //we are an array
                     else
                     {
-                        printf("Id: %s [mem: %s loc: -999 size: %d] of array of type %s [line: %d]\n",
+
+                        printf("Id: %s [mem: %s loc: %d size: %d] of array of type %s [line: %d]\n",
                                node->attr.name,
                                scoping,
+                               node->loc - 1,
                                node->size,
                                typing,
                                node->lineno);
@@ -464,23 +467,70 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
             switch (node->subkind.decl)
             {
             case VarK:
-                if (node->attr.name == NULL)
-                {
-                    printf("internal error NULL REACHED in attrName Vark\n");
-                }
 
-                if (node->isArray)
-                    printf("Var: %s is array of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                if (memPrintFlag)
+                {
+                    if (node->attr.name == NULL)
+                    {
+                        printf("internal error NULL REACHED in attrName Vark\n");
+                    }
+
+                    if (node->isArray)
+                        printf("Var: %s is array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                               node->attr.name,
+                               typing,
+                               scoping,
+                               node->loc - 1,
+                               node->size,
+                               node->lineno);
+                    else
+                        printf("Var: %s of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                               node->attr.name,
+                               typing,
+                               scoping,
+                               node->loc,
+                               node->size,
+                               node->lineno);
+                }
                 else
-                    printf("Var: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                {
+                    if (node->attr.name == NULL)
+                    {
+                        printf("internal error NULL REACHED in attrName Vark\n");
+                    }
+
+                    if (node->isArray)
+                        printf("Var: %s is array of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                    else
+                        printf("Var: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                }
                 break;
             case FuncK:
-                if (node->attr.name == NULL)
+                if (memPrintFlag)
                 {
-                    printf("internal error NULL REACHED in attrName funck\n");
-                    break;
+                    if (node->attr.name == NULL)
+                    {
+                        printf("internal error NULL REACHED in attrName funck\n");
+                        break;
+                    }
+                    printf("Func: %s returns type %s [mem: %s loc: %d size: %d] [line: %d]\n", 
+                    node->attr.string,
+                    typing,
+                    scoping,
+                    node->loc,
+                    node->size,
+                    node->lineno);
                 }
-                printf("Func: %s returns type %s [line: %d]\n", node->attr.string, typing, node->lineno);
+                else
+                {
+                    if (node->attr.name == NULL)
+                    {
+                        printf("internal error NULL REACHED in attrName funck\n");
+                        break;
+                    }
+                    printf("Func: %s returns type %s [line: %d]\n", node->attr.string, typing, node->lineno);
+                }
+
                 break;
             case ParamK:
                 if (node->attr.name == NULL)

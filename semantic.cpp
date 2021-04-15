@@ -208,8 +208,8 @@ void checkChildren(TreeNode *node, SymbolTable *symTab, bool suppressChildScope)
 }
 
 
-int localOffset=0;
-int globalOffset=0;
+int localOffset= 0;
+int globalOffset= 0;
 void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, TreeNode *parent)
 {
     char typing[64];
@@ -506,6 +506,21 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     if(node->depth == 1)
                     {
                         node->scope = Global;
+
+                        node->loc = globalOffset;
+                        if(node->isArray)
+                        {
+                            printf("size:%d\n",node->size);
+
+                            globalOffset -= node->size;
+                        }
+                        else
+                        {
+                            printf("size of nonarray: %d\n",node->size);
+
+                            globalOffset -= node->size;
+                        }
+
                     }
                     else if(node->depth > 1)
                     {
@@ -683,6 +698,12 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
 
                 symTab->applyToAll(checkIsUsed);
 
+                //MEMORY STUFF
+                //-2 denotes the previous frame ptr slot and
+                //the location to return to after the function ends
+                node->size = -2 - node->numParams;
+                node->scope = Global;
+
                 //This simplified code replaces the code that was below.
                 //We need to check for parameter usage only when there is not a cmpound stmt.
                 //This check is done by the cmpound stmt already and would produce double errors otherwise
@@ -841,6 +862,10 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 //BOLD ASSUMPTION THAT ALL CONST ARE GLOBAL IN SCOPE
                 node->scope = Global;
                 
+                node->loc = globalOffset;
+                globalOffset -= node->size;
+                
+                
 
                 break;
 
@@ -885,10 +910,13 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     node->expType = lookupNode->expType;
                     node->size = lookupNode->size;
                     node->scope = lookupNode->scope;
+                    node->loc = lookupNode->loc;
                     node->isArray = lookupNode->isArray;
                     node->isStatic = lookupNode->isStatic;
                     node->isFunc = lookupNode->isFunc;
 
+
+                    
                     //Uninitilized ID's Get suppressed to avoid cascading errors
                     if (!lookupNode->isInit)
                     {
