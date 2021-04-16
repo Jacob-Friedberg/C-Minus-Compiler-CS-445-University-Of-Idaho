@@ -318,14 +318,32 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                 printf("While [line: %d]\n", node->lineno);
                 break;
             case ForK:
-                printf("For [line: %d]\n", node->lineno);
+                if (memPrintFlag)
+                {
+                    printf("For [mem: %s loc: %d size: %d] [line: %d]\n",
+                           scoping,
+                           node->loc,
+                           node->size,
+                           node->lineno);
+                } 
+                else
+                    printf("For [line: %d]\n", node->lineno);
                 break;
             case CompoundK:
-                printf("Compound [mem: %s loc: %d size: %d] [line: %d]\n",
-                       scoping,
-                       node->loc,
-                       node->size,
-                       node->lineno);
+                if (memPrintFlag)
+                {
+                    printf("Compound [mem: %s loc: %d size: %d] [line: %d]\n",
+                           scoping,
+                           node->loc,
+                           node->size,
+                           node->lineno);
+                }
+                else
+                {
+                    printf("Compound [line: %d]\n",
+                           node->lineno);
+                }
+
                 break;
             case ReturnK:
                 printf("Return [line: %d]\n", node->lineno);
@@ -382,12 +400,12 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                     {
                         if (node->isArray)
                         {
-                            printf("Const \"%s\" [mem: %s loc: %d size: %d] of array of type %s [line: %d]\n",
+                            printf("Const \"%s\" of array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
                                    node->attr.string,
+                                   typing,
                                    scoping,
                                    node->loc - 1,
                                    node->size,
-                                   typing,
                                    node->lineno);
                         }
                         else
@@ -411,7 +429,6 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                     printf("Const %d of type %s [line: %d]\n", node->attr.value, typing, node->lineno);
                 break;
             case IdK:
-
                 if (memPrintFlag)
                 {
                     //we are not an array
@@ -421,20 +438,58 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                         {
                             printf("Id: %s of undefined type [line: %d]\n", node->attr.name, node->lineno);
                         }
+                        else if(node->scope == LocalStatic)
+                        {
+                            printf("Id: %s of static type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc,
+                                   node->size,
+                                   node->lineno);
+                        }
                         else
-                            printf("Id: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                            printf("Id: %s of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc,
+                                   node->size,
+                                   node->lineno);
                     }
                     //we are an array
                     else
                     {
-
-                        printf("Id: %s [mem: %s loc: %d size: %d] of array of type %s [line: %d]\n",
-                               node->attr.name,
-                               scoping,
-                               node->loc - 1,
-                               node->size,
-                               typing,
-                               node->lineno);
+                        if (node->scope == LocalStatic)
+                        {
+                            printf("Id: %s of static array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc - 1,
+                                   node->size,
+                                   node->lineno);
+                        }
+                        else if (node->scope == Parameter)
+                        {
+                            printf("Id: %s of array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc,
+                                   node->size,
+                                   node->lineno);
+                        }
+                        else
+                        {
+                            printf("Id: %s of array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc - 1,
+                                   node->size,
+                                   node->lineno);
+                        }
                     }
                 }
                 else
@@ -449,7 +504,27 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
 
                 break;
             case AssignK:
-                printf("Assign: %s of type %s [line: %d]\n", node->attr.string, typing, node->lineno);
+                if (memPrintFlag)
+                {
+                    if (node->isArray)
+                    {
+                        printf("Assign: %s of array of type %s [line: %d]\n",
+                               node->attr.string,
+                               typing,
+                               node->lineno);
+                    }
+                    else
+                    {
+                        printf("Assign: %s of type %s [line: %d]\n",
+                               node->attr.string,
+                               typing,
+                               node->lineno);
+                    }
+                }
+                else
+                {
+                    printf("Assign: %s of type %s [line: %d]\n", node->attr.string, typing, node->lineno);
+                }
                 break;
             case InitK:
                 printf("Init:\n");
@@ -475,22 +550,44 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                         printf("internal error NULL REACHED in attrName Vark\n");
                     }
 
-                    if (node->isArray)
-                        printf("Var: %s is array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
-                               node->attr.name,
-                               typing,
-                               scoping,
-                               node->loc - 1,
-                               node->size,
-                               node->lineno);
+                    if (node->scope == LocalStatic)
+                    {
+                        if (node->isArray)
+                            printf("Var: %s of static array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc - 1,
+                                   node->size,
+                                   node->lineno);
+                        else
+                            printf("Var: %s of static type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc,
+                                   node->size,
+                                   node->lineno);
+                    }
                     else
-                        printf("Var: %s of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
-                               node->attr.name,
-                               typing,
-                               scoping,
-                               node->loc,
-                               node->size,
-                               node->lineno);
+                    {
+                        if (node->isArray)
+                            printf("Var: %s of array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc - 1,
+                                   node->size,
+                                   node->lineno);
+                        else
+                            printf("Var: %s of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                                   node->attr.name,
+                                   typing,
+                                   scoping,
+                                   node->loc,
+                                   node->size,
+                                   node->lineno);
+                    }
                 }
                 else
                 {
@@ -513,13 +610,13 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                         printf("internal error NULL REACHED in attrName funck\n");
                         break;
                     }
-                    printf("Func: %s returns type %s [mem: %s loc: %d size: %d] [line: %d]\n", 
-                    node->attr.string,
-                    typing,
-                    scoping,
-                    node->loc,
-                    node->size,
-                    node->lineno);
+                    printf("Func: %s returns type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                           node->attr.string,
+                           typing,
+                           scoping,
+                           node->loc,
+                           node->size,
+                           node->lineno);
                 }
                 else
                 {
@@ -541,10 +638,33 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
 
                 //printf("Parm: %s%s of type %s [line: %d]\n", node->attr.name,node->isArray?" is array":"", typing, node->lineno);
 
-                if (node->isArray)
-                    printf("Parm: %s is array of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                if (memPrintFlag)
+                {
+                    if (node->isArray)
+                        printf("Parm: %s of array of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                               node->attr.name,
+                               typing,
+                               scoping,
+                               node->loc,
+                               node->size,
+                               node->lineno);
+                    else
+                        printf("Parm: %s of type %s [mem: %s loc: %d size: %d] [line: %d]\n",
+                               node->attr.name,
+                               typing,
+                               scoping,
+                               node->loc,
+                               node->size,
+                               node->lineno);
+                }
                 else
-                    printf("Parm: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                {
+                    if (node->isArray)
+                        printf("Parm: %s is array of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                    else
+                        printf("Parm: %s of type %s [line: %d]\n", node->attr.name, typing, node->lineno);
+                }
+
                 break;
             default:
                 printf("Unknown Declk subKind\n");
@@ -662,7 +782,7 @@ void convertScopeKindToString(ScopeKind scope, char *string)
         strcpy(string, "Parameter");
         break;
     case LocalStatic:
-        strcpy(string, "Local Static");
+        strcpy(string, "LocalStatic");
         break;
     default:
         printf("Undefined SCOPE given to conversion function\n");

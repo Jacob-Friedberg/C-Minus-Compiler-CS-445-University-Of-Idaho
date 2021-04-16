@@ -23,7 +23,6 @@ void ioLibrary(SymbolTable *symTab);
 int NUM_ERRORS = 0;
 int NUM_WARNINGS = 0;
 
-
 void foo(void *x)
 {
     dumpNode((treeNode *)x);
@@ -154,7 +153,7 @@ void checkSizeOf(TreeNode *node, SymbolTable *symTab)
         //     }
         // }
         // else
-            node->expType = Integer;
+        node->expType = Integer;
 
         //Can only use sizeof with an array. Check and throw error if it is not an array.
         if (node->child[0]->subkind.exp == IdK)
@@ -207,12 +206,13 @@ void checkChildren(TreeNode *node, SymbolTable *symTab, bool suppressChildScope)
     }
 }
 
+int localOffset = 0;
+int globalOffset = 0;
 
-int localOffset= 0;
-int globalOffset= 0;
 void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, TreeNode *parent)
 {
     char typing[64];
+    int tmpLocalOffset = 0;
     //Statics are only initlized once
     //On many recursions the state is maintained and not overwritten,
     //Unless explicitly told to.
@@ -220,10 +220,6 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
     static TreeNode *headOfTree = NULL;
     static TreeNode *tailOfTree = NULL;
     static bool returnStmtFound = false;
-
-    static int compound_size = 0;
-
- 
 
     //Counts how deep we are in nested loops(for and while)
     //0 means not in a loop >0 means in a loop. This specific for the break stmt
@@ -314,9 +310,14 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 symTab->enter(std::string("this is a for loop"));
                 //We are in a loop
                 loopDepth++;
-
+                //MEMORY
+                //Store the offset before diving into children
+                tmpLocalOffset = localOffset;
                 checkChildren(node, symTab, SUPPRESS_CHILD_SCOPE);
 
+                node->size = localOffset;
+                //restore the offset
+                localOffset = tmpLocalOffset;
                 //only check if used if there is not a compound statement. This is because compound already checks.
                 //Scopes dont change therefore compounds will catch all unused.
                 if (!(node->child[2] != NULL && node->child[2]->nodekind == StmtK && node->child[2]->subkind.stmt == CompoundK))
@@ -332,11 +333,17 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
             case CompoundK:
                 if (!parentSuppressScope)
                     symTab->enter(std::string("THIS IS A COMPOUND"));
-                
-                
-                checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
 
-                node->size = compound_size;
+                //MEMORY
+                //Store the offset before diving into the children
+                tmpLocalOffset = localOffset;
+                checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+                //Store the offset into size, and restore it to what it was before.
+                node->size = localOffset;
+                localOffset = tmpLocalOffset;
+                //MEMORY
+                //Set the size of our compound statment to the local offset.
+                //Local offset is equivalent to the total size of all allocated items.
 
                 //Dont do this for functions
                 //HACK
@@ -501,40 +508,52 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 {
                     node->depth = symTab->depth();
 
+                    node->isUsed = false;
+
+                    if (!node->isArray)
+                        node->size = 1;
+                    //Special handleing for the case of init variables in for loops
+                    //MEMORY set the size of our range.
+                    if (node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
+                    {
+                        node->isInit = true;
+                    }
+                    else
+                    {
+                        node->isInit = false;
+                    }
+
+                    node->isInitErrorThrown = false;
+
                     //we are at the global scope so set our scope to global
                     //Assuming anything other than global scope is a local. PROB WRONG!!!
-                    if(node->depth == 1)
+                    if (node->depth == 1)
                     {
                         node->scope = Global;
 
                         node->loc = globalOffset;
-                        if(node->isArray)
-                        {
-                            printf("size:%d\n",node->size);
 
+                        globalOffset -= node->size;
+                    }
+                    //Anything else should be a local or localstatic
+                    else if (node->depth > 1)
+                    {
+                        //We are either a static or a local variable
+                        if (node->isStatic)
+                        {
+                            node->scope = LocalStatic;
+
+                            node->loc = globalOffset;
                             globalOffset -= node->size;
                         }
                         else
                         {
-                            printf("size of nonarray: %d\n",node->size);
-
-                            globalOffset -= node->size;
+                            node->scope = Local;
+                            node->loc = localOffset;
+                            //Decrement the offset by the size of our variable
+                            localOffset -= node->size;
                         }
-
                     }
-                    else if(node->depth > 1)
-                    {
-                        node->scope = Local;
-                    }
-
-                    node->isUsed = false;
-                    //Special handleing for the case of init variables in for loops
-                    if (node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
-                        node->isInit = true;
-                    else
-                        node->isInit = false;
-
-                    node->isInitErrorThrown = false;
                 }
                 //Symbol already exists in the table. Throw an error
                 else
@@ -554,7 +573,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 if (node->child[0] != NULL)
                 {
                     //Set the child scope to that of the parent.
-                    node->child[0]->scope = node->scope;
+                    //node->child[0]->scope = node->scope;
 
                     //HACK: special case of initilzing to itself.
 
@@ -634,8 +653,8 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     break;
                 }
 
-                
-
+                //MEMORY
+                //Set the local offset to -2 for the return addr and Program counter location.
                 localOffset = -2;
 
                 //Set func flag
@@ -663,7 +682,6 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 }
                 //prob shouldn't enter regardless if there is an error.
                 symTab->enter(std::string(node->attr.string));
-
 
                 //store our function node for typechecking later in the children
                 if (node->isFunc && !node->isIo)
@@ -760,15 +778,16 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 }
                 node->depth = symTab->depth();
 
-                //Paramk Size for compound stmts
-                if(node->isArray && !node->isIo)
-                {
-                    compound_size -=2;
-                }
-                else if(!node->isArray && !node->isIo)
-                    compound_size--;
-
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
+
+                //Memory
+                //Set the scope and location in the frame for the parameter nodes
+                //also set the size to 1.
+                node->scope = Parameter;
+                node->loc = localOffset;
+                node->size = 1;
+                //Decrement the local offset for each parameter.
+                localOffset--;
 
                 node->parent->numParams++;
                 break;
@@ -792,7 +811,7 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 if (node->op == OPEN_BRACK)
                 {
                     //Setting the exptype of [ array to that of its Identifier.
-                    
+
                     if (node->child[0] != NULL)
                     {
                         node->expType = node->child[0]->expType;
@@ -861,11 +880,9 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                 node->isConst = true;
                 //BOLD ASSUMPTION THAT ALL CONST ARE GLOBAL IN SCOPE
                 node->scope = Global;
-                
+
                 node->loc = globalOffset;
                 globalOffset -= node->size;
-                
-                
 
                 break;
 
@@ -915,8 +932,6 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     node->isStatic = lookupNode->isStatic;
                     node->isFunc = lookupNode->isFunc;
 
-
-                    
                     //Uninitilized ID's Get suppressed to avoid cascading errors
                     if (!lookupNode->isInit)
                     {
@@ -1344,14 +1359,14 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                 if (rhs != UndefinedType)
                 {
                     //Hack: Output prints voids when mult appears
-                    if (rhs == Void && op == MULT)
+                    if (rhs == Void && !rhsNode->isFunc)
                     {
                         printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
                                parentNode->lineno, parentNode->attr.string,
                                buff2);
                         NUM_ERRORS++;
                     }
-                    else if (rhs != Void)
+                    else if (rhs != Void && !rhsNode->isFunc)
                     {
                         printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
                                parentNode->lineno, parentNode->attr.string,
@@ -1366,14 +1381,14 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                 if (lhs != UndefinedType)
                 {
                     //Hack: Output prints voids when mult appears
-                    if (lhs == Void && op == MULT)
+                    if (lhs == Void  && !lhsNode->isFunc)
                     {
                         printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
                                parentNode->lineno, parentNode->attr.string,
                                buff1);
                         NUM_ERRORS++;
                     }
-                    else if (lhs != Void)
+                    else if (lhs != Void && !lhsNode->isFunc)
                     {
                         printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
                                parentNode->lineno, parentNode->attr.string,
@@ -1654,7 +1669,7 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                     parentNode->isArray = true;
                     return lhs;
                 }
-                   
+
                 else if (lhsNode->isArray && !(rhsNode->isArray))
                 {
                     printf("ERROR(%d): '%s' requires both operands be arrays or not but lhs is an array and rhs is not an array.\n",
@@ -1746,6 +1761,12 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                     printf("ERROR(%d): '%s' requires operands of type int but rhs is of type %s.\n",
                            parentNode->lineno, parentNode->attr.string,
                            buff2);
+                    NUM_ERRORS++;
+                }
+
+                if (lhsNode->isArray || rhsNode->isArray)
+                {
+                    printf("ERROR(%d): The operation '%s' does not work with arrays.\n", parentNode->lineno, parentNode->attr.string);
                     NUM_ERRORS++;
                 }
 

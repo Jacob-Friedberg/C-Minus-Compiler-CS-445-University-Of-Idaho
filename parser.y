@@ -131,7 +131,7 @@ varDeclInit     : varDeclId {$$ = $1;}
                                                  if($$ != NULL && $3 != NULL)
                                                  {
                                                     $$->child[0] = $3;
-                                                    $$->size = $3->size;
+                                                    $$->size = $1->size;
                                                  }
                                                  }
                 | error COLON simpleExp {$$ = NULL; yyerrok;}
@@ -739,16 +739,20 @@ int main(int argc, char *argv[])
         printf("ERROR(LINKER): A function named 'main' with no parameters must be defined.\n");
         NUM_ERRORS++;
       }
-
-        if(memFlag)
+      if(NUM_ERRORS == 0)
+      {
+          if(memFlag)
         {
           printTypedTree(syntaxTree,0, PRINT_MEM_LOC);
           printf("Offset for end of global space: %d\n",globalOffset);
         }
+
         else if(!memFlag)
         {
           printTypedTree(syntaxTree,0, DONT_PRINT_MEM_LOC);
         }
+      }
+        
           
 
       printf("Number of warnings: %d\n",NUM_WARNINGS);

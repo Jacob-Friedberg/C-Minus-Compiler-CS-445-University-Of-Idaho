@@ -1,27 +1,28 @@
-// C-F20
-// C-F20
-// different memory layouts
+// C-S21
 
-int u;
-bool v[4];
+int lund;
 
-int polgara(int a; bool b)
+lund(int a)
 {
-        int x;
-        x = a;
-        return x;
 }
 
-main()
+int fred(int a; int a)
 {
-        int i;
-        bool b;
-        int ai[3];
-        bool ab[2];
-        int z;
-
-        z = polgara(i+43, b);
-
-        u = 666;
-        v[3] = true;
+    int a;
+    a();
+    fred+4;
 }
+
+int fred;
+
+linda(int linda)
+{
+    int linda;
+}
+
+int  galadriel;
+arwen(int eowyn)
+{
+    arwen+4;
+}       
+
