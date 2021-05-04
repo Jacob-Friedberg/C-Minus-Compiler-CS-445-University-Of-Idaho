@@ -14,8 +14,8 @@
 #include <string.h>
 #include "emitcode.h"
 
-extern FILE *code = NULL;
-
+extern FILE *code;
+ 
 
 //  TM location number for current instruction emission
 static int emitLoc = 0;   // next empty slot in Imem growing to lower memory
