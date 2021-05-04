@@ -10,6 +10,7 @@
 #include "symbolTable.h"
 #include "semantic.h"
 #include "yyerror.h"
+#include "codegen.h"
 
 
 
@@ -648,6 +649,7 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
 %%
 extern int yydebug;
 
+FILE* code;
 
 
 
@@ -667,6 +669,9 @@ int main(int argc, char *argv[])
     extern int NUM_ERRORS;
     extern int globalOffset;
     
+    
+    char filename[256];
+
     initErrorProcessing();
 
     while(1)
@@ -697,7 +702,10 @@ int main(int argc, char *argv[])
 
         if(optind < argc)
         {
-            //printf("file found as %s\nTesting grammar. Nothing is good\n",argv[optind]);
+            //printf("file found as %s\n",argv[optind]);
+
+            strcpy(filename,argv[optind]);
+            
 
             if ((yyin = fopen(argv[optind], "r"))) {
             // file open successful
@@ -724,6 +732,18 @@ int main(int argc, char *argv[])
         yydebug = 1;
 
     // do the parsing
+    
+    //Fix up file name so that it is TM
+    //printf("filename:%s of size %d\n",filename,strlen(filename));
+    filename[strlen(filename)-2] = 't';
+    filename[strlen(filename)-1] = 'm';
+  
+    code = fopen(filename,"w");
+    if(code == NULL)
+    {
+      printf("TM file failed to open, stopping program...\n");
+      exit(-1);
+    }
     yyparse();
     SymbolTable *symTab; 
     symTab = new SymbolTable();
@@ -757,6 +777,9 @@ int main(int argc, char *argv[])
 
       printf("Number of warnings: %d\n",NUM_WARNINGS);
       printf("Number of errors: %d\n",NUM_ERRORS);
+
+      
+      
 
     }
     else if(printFlagOld && NUM_ERRORS == 0)
