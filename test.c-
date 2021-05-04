@@ -1,28 +1,12 @@
 // C-S21
+int x;
+int y;
 
-int lund;
-
-lund(int a)
+main()
 {
+    x = 753;
+    y = 444;
+    output(x += y);
+    output(y -= x);
+    outnl();
 }
-
-int fred(int a; int a)
-{
-    int a;
-    a();
-    fred+4;
-}
-
-int fred;
-
-linda(int linda)
-{
-    int linda;
-}
-
-int  galadriel;
-arwen(int eowyn)
-{
-    arwen+4;
-}       
-

@@ -29,7 +29,7 @@ all:
 .PHONY : clean
 clean:
 	@echo "cleaning..."
-	rm -f $(BIN) $(OBJS) lex.yy.c parser.tab.c parser.output *.tm *~
+	rm -f $(BIN) $(OBJS) lex.yy.c parser.tab.c parser.output *.in *~
 	rm -rf $(TARNAME)
 .PHONY : tar
 tar:

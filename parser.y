@@ -648,7 +648,7 @@ token           : ID            {printf("Line %d Token: ID Value: %s\n",$1->line
 */
 %%
 extern int yydebug;
-
+char srcFilename[256];
 FILE* code;
 
 
@@ -668,9 +668,10 @@ int main(int argc, char *argv[])
     extern int NUM_WARNINGS;
     extern int NUM_ERRORS;
     extern int globalOffset;
-    
-    
     char filename[256];
+    
+    
+    
 
     initErrorProcessing();
 
@@ -703,8 +704,9 @@ int main(int argc, char *argv[])
         if(optind < argc)
         {
             //printf("file found as %s\n",argv[optind]);
-
+            
             strcpy(filename,argv[optind]);
+            strcpy(srcFilename,argv[optind]);
             
 
             if ((yyin = fopen(argv[optind], "r"))) {
@@ -735,10 +737,17 @@ int main(int argc, char *argv[])
     
     //Fix up file name so that it is TM
     //printf("filename:%s of size %d\n",filename,strlen(filename));
-    filename[strlen(filename)-2] = 't';
-    filename[strlen(filename)-1] = 'm';
-  
+    
+    int tmplen = strlen(filename);
+    
+
+    filename[tmplen-2] = 't';
+    filename[tmplen-1] = 'm';
+    filename[tmplen] = '\0';
+
+   // printf("filename:%s of size %d\n",filename,strlen(filename));
     code = fopen(filename,"w");
+
     if(code == NULL)
     {
       printf("TM file failed to open, stopping program...\n");
@@ -747,7 +756,7 @@ int main(int argc, char *argv[])
     yyparse();
     SymbolTable *symTab; 
     symTab = new SymbolTable();
-    if(printFlag && NUM_ERRORS == 0)
+    if(NUM_ERRORS == 0)
     {
       checkTree2(symTab,syntaxTree,false,NULL);
       treeNode *tmpLookupNode = (treeNode *) symTab->lookupGlobal(std::string("main"));
@@ -761,38 +770,33 @@ int main(int argc, char *argv[])
       }
       if(NUM_ERRORS == 0)
       {
-          if(memFlag)
+        if(memFlag)
         {
           printTypedTree(syntaxTree,0, PRINT_MEM_LOC);
           printf("Offset for end of global space: %d\n",globalOffset);
         }
 
-        else if(!memFlag)
+        else if(!memFlag && printFlag)
         {
           printTypedTree(syntaxTree,0, DONT_PRINT_MEM_LOC);
         }
+        else if(printFlagOld)
+        {
+          printTree(syntaxTree,0);
+        }
       }
         
-          
-
       printf("Number of warnings: %d\n",NUM_WARNINGS);
       printf("Number of errors: %d\n",NUM_ERRORS);
 
-      
-      
+      gen_code(symTab,syntaxTree);
 
-    }
-    else if(printFlagOld && NUM_ERRORS == 0)
-    {
-     
-        printTree(syntaxTree,0);
-        printf("Number of warnings: %d\n",NUM_WARNINGS);
-        printf("Number of errors: %d\n",NUM_ERRORS);
+
     }
     else
     {
-        printf("Number of warnings: %d\n",NUM_WARNINGS);
-        printf("Number of errors: %d\n",NUM_ERRORS);
+      printf("Number of warnings: %d\n",NUM_WARNINGS);
+      printf("Number of errors: %d\n",NUM_ERRORS);
     }
 
     return 0;
