@@ -746,7 +746,7 @@ int main(int argc, char *argv[])
     filename[tmplen] = '\0';
 
    // printf("filename:%s of size %d\n",filename,strlen(filename));
-    code = fopen(filename,"w");
+    code = fopen(filename,"w+");
 
     if(code == NULL)
     {

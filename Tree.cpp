@@ -325,7 +325,7 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                            node->loc,
                            node->size,
                            node->lineno);
-                } 
+                }
                 else
                     printf("For [line: %d]\n", node->lineno);
                 break;
@@ -438,7 +438,7 @@ void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag)
                         {
                             printf("Id: %s of undefined type [line: %d]\n", node->attr.name, node->lineno);
                         }
-                        else if(node->scope == LocalStatic)
+                        else if (node->scope == LocalStatic)
                         {
                             printf("Id: %s of static type %s [mem: %s loc: %d size: %d] [line: %d]\n",
                                    node->attr.name,
@@ -841,6 +841,10 @@ void dumpNode(treeNode *node)
         printf("isUsed: true\n");
     else
         printf("IsUsed: false\n");
+    if (node->isParam)
+        printf("isParam: true\n");
+    else
+        printf("IsParam: false\n");
 
     printf("depth:%d\n", node->depth);
 

@@ -162,5 +162,6 @@ void dumpNode(TreeNode *node);
 TreeNode *addSibling(TreeNode *t, TreeNode *s);
 void setType(TreeNode *t, ExpType type, bool isStatic);
 void convertExpTypeToString(ExpType type, char *string);
+void convertScopeKindToString(ScopeKind scope, char *string);
 void printSpaces(int indentLevel);
 #endif
