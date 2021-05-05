@@ -1,9 +1,12 @@
 // C-S21
-int x;
-
 main()
 {
-     x = 273;
-     output(x);
-}
+     outputb(?1==0);
+     outnl();
 
+     // test is a bit stochastic
+     outputb(?100000>0);
+     outputb(?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0);
+     outputb(?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0);
+     outnl();
+}

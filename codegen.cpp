@@ -227,6 +227,15 @@ void decrement_toffset(int numberOfDecrements)
     }
 }
 
+void increment_toffset(int numberOfIncrements)
+{
+    for (int i = 0; i < numberOfIncrements; i++)
+    {
+        tOffset++;
+        emitComment((char *)"TOFF inc:", tOffset);
+    }
+}
+
 //Param1: Name of node to lookup
 //Param2: where did you call this function from?
 treeNode *sym_lookup(char *nodeName, char *calledFrom, SymbolTable *symTab)
@@ -248,12 +257,14 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
     char typing[64];
     char scoping[64];
 
+    static bool hasPushed = false;
+
     treeNode *lookupNode;
     //symTab->debug(true);
     while (node != NULL)
     {
         convertExpTypeToString(node->expType, typing);
-        convertScopeKindToString(node->scope,scoping);
+        convertScopeKindToString(node->scope, scoping);
 
         //Refactored switch
         //Process statements
@@ -374,17 +385,117 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
             switch (node->subkind.exp)
             {
             case OpK:
-
                 checkChildren(node, symTab);
+
+                if (node->op == MULT)
+                {
+                    emitRO((char *)"MUL", 3, 4, 3, (char *)"Op *");
+                }
+                else if (node->op == PLUS)
+                {
+                    emitRO((char *)"ADD", 3, 4, 3, (char *)"Op +");
+                }
+                else if (node->op == MOD)
+                {
+                    emitRO((char *)"MOD", 3, 4, 3, (char *)"Op %");
+                }
+                else if (node->op == DIV)
+                {
+                    emitRO((char *)"DIV", 3, 4, 3, (char *)"Op /");
+                }
+                else if (node->op == MINUS)
+                {
+                    emitRO((char *)"SUB", 3, 4, 3, (char *)"Op -");
+                }
+                else if (node->op == CHSIGN)
+                {
+                    emitRO((char *)"NEG", 3, 3, 3, (char *)"Op unary -");
+                }
+                else if (node->op == NOT)
+                {
+                    emitRO((char *)"XOR", 3, 3, 4, (char *)"Op XOR to get logical not");
+                }
+                else if (node->op == OR)
+                {
+                    emitRO((char *)"OR", 3, 4, 3, (char *)"Op OR");
+                }
+                else if (node->op == AND)
+                {
+                    emitRO((char *)"AND", 3, 4, 3, (char *)"Op AND");
+                }
+                else if (node->op == QUESTION)
+                {
+                    emitRO((char *)"RND", 3, 3, 6, (char *)"Op ?");
+                }
+                else if(node->op == EQ)
+                {
+                    emitRO((char *)"TEQ", 3, 4, 3, (char *)"Op ==");
+                }
+
                 break;
 
             case ConstantK:
-                emitComment((char *)"EXPRESSION");
-                checkChildren(node, symTab);
 
-                if (node->expType == Integer)
+                checkChildren(node, symTab);
+                if (!node->parent->isOp)
                 {
-                    emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+                    emitComment((char *)"EXPRESSION");
+                    if (node->expType == Integer)
+                    {
+                        emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+                    }
+                    else if (node->expType == Boolean)
+                    {
+                        emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load Boolean constant");
+                    }
+                    else if (node->expType == Char)
+                    {
+                        emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load char constant");
+                    }
+                }
+                //our parent is an OP
+                else
+                {
+                    if (node->expType == Integer)
+                    {
+
+                        emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+                        if (hasPushed == false && node->parent->op != CHSIGN)
+                        {
+                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
+                            decrement_toffset(1);
+                            hasPushed = true;
+                        }
+                        else if (hasPushed == true && node->parent->op != CHSIGN)
+                        {
+                            increment_toffset(1);
+                            emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+                            hasPushed = false;
+                        }
+                    }
+                    //Assuming always Not/XOR
+                    else if (node->expType == Boolean && node->parent->op == NOT)
+                    {
+                        emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load Boolean constant");
+                        emitRM((char *)"LDC", 4, 1, 6, (char *)"Load 1");
+                    }
+                    else if (node->expType == Boolean && node->parent->op != NOT)
+                    {
+                        emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load Boolean constant");
+
+                        if (hasPushed == false)
+                        {
+                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
+                            decrement_toffset(1);
+                            hasPushed = true;
+                        }
+                        else
+                        {
+                            increment_toffset(1);
+                            emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+                            hasPushed = false;
+                        }
+                    }
                 }
 
                 break;
@@ -399,11 +510,10 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
 
                 checkChildren(node, symTab);
                 //check the scoping, this will determine the register to use
-                if(node->child[0]->scope == Local)
-                    emitRM((char *)"ST", 3, node->child[0]->loc, 1, (char *)"Store variable",node->child[0]->attr.string);
-                else if(node->child[0]->scope == Global)
-                    emitRM((char *)"ST", 3, node->child[0]->loc, 0, (char *)"Store variable",node->child[0]->attr.string);
-
+                if (node->child[0]->scope == Local)
+                    emitRM((char *)"ST", 3, node->child[0]->loc, 1, (char *)"Store variable", node->child[0]->attr.string);
+                else if (node->child[0]->scope == Global)
+                    emitRM((char *)"ST", 3, node->child[0]->loc, 0, (char *)"Store variable", node->child[0]->attr.string);
 
                 break;
             }
@@ -426,26 +536,42 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
                 {
                     emitComment((char *)"Param", i);
                     //for normal constants without IdK
-                    if (node->child[0]->subkind.exp != IdK)
+                    if (!node->child[0]->isOp)
                     {
-                        if (node->child[0]->expType == Integer)
-                            emitRM((char *)"LDC", 3, node->child[0]->attr.value, 6, (char *)"Load integer constant");
-                        else if (node->child[0]->expType == Boolean)
-                            emitRM((char *)"LDC", 3, node->child[0]->attr.value, 6, (char *)"Load Boolean constant");
+
+                        if (node->child[0]->subkind.exp != IdK)
+                        {
+                            //Only do this if we do not have an operator.
+
+                            if (node->child[0]->expType == Integer)
+                                emitRM((char *)"LDC", 3, node->child[0]->attr.value, 6, (char *)"Load integer constant");
+                            else if (node->child[0]->expType == Boolean)
+                                emitRM((char *)"LDC", 3, node->child[0]->attr.value, 6, (char *)"Load Boolean constant");
+                            else if (node->child[0]->expType == Char)
+                                emitRM((char *)"LDC", 3, node->child[0]->attr.value, 6, (char *)"Load char constant");
+                            //Push parameter into reg
+                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push parameter");
+                        }
+                        //IdK variables
+                        else if (node->child[0]->subkind.exp == IdK)
+                        {
+                            //check the scoping, this will determine the register to use
+                            if (node->child[0]->scope == Local)
+                                emitRM((char *)"LD", 3, node->child[0]->loc, 1, (char *)"Load variable", node->child[0]->attr.string);
+                            else if (node->child[0]->scope == Global)
+                                emitRM((char *)"LD", 3, node->child[0]->loc, 0, (char *)"Load variable", node->child[0]->attr.string);
+                            //Push parameter into reg
+                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push parameter");
+                        }
                     }
-                    //IdK variables
-                    else if (node->child[0]->subkind.exp == IdK)
+                    //we have an op
+                    else
                     {
-                        //check the scoping, this will determine the register to use
-                        if(node->child[0]->scope == Local)
-                            emitRM((char *)"LD", 3, node->child[0]->loc, 1, (char *)"Load variable", node->child[0]->attr.string);
-                        else if(node->child[0]->scope == Global)
-                            emitRM((char *)"LD", 3, node->child[0]->loc, 0, (char *)"Load variable", node->child[0]->attr.string);
-
+                        //send the nodes through the check children to
+                        //be handled in the switchcase
+                        checkChildren(node, symTab);
+                        emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push parameter");
                     }
-
-                    //Push parameter into reg
-                    emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push parameter");
 
                     //Decrement for each parameter.
                     decrement_toffset(1);
@@ -467,7 +593,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
 
                 //SPECIAL CASE!
                 //For loop above is dealing with children
-                //checkChildren(node, symTab);
+
                 break;
 
             default:
