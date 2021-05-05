@@ -653,6 +653,8 @@ FILE* code;
 
 
 
+
+
 #define PRINT_MEM_LOC true
 
 #define DONT_PRINT_MEM_LOC false
@@ -670,7 +672,7 @@ int main(int argc, char *argv[])
     extern int globalOffset;
     char filename[256];
     
-    
+    TraverseState state = Normal;
     
 
     initErrorProcessing();

@@ -5,7 +5,7 @@
 #include "codegen.h"
 #include <string.h>
 
-void code_gen_traverse(SymbolTable *symTab, TreeNode *node);
+void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state);
 
 extern int globalOffset;
 
@@ -205,7 +205,7 @@ void init_IO(SymbolTable *symTab)
     func_label_bottom((char *)"outnl");
 }
 
-void checkChildren(TreeNode *node, SymbolTable *symTab)
+void checkChildren(TreeNode *node, SymbolTable *symTab, TraverseState state)
 {
 
     for (int i = 0; i < MAXCHILDREN; i++)
@@ -213,7 +213,7 @@ void checkChildren(TreeNode *node, SymbolTable *symTab)
         if (node->child[i] != NULL)
         {
             //printf("Child: %d ", i);
-            code_gen_traverse(symTab, node->child[i]);
+            code_gen_traverse(symTab, node->child[i], state);
         }
     }
 }
@@ -251,13 +251,15 @@ treeNode *sym_lookup(char *nodeName, char *calledFrom, SymbolTable *symTab)
     return tmpNode;
 }
 
-void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
+void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 {
     int ghostFrameToff = 0;
     char typing[64];
     char scoping[64];
 
     static bool hasPushed = false;
+    static bool isUnary = false;
+    static bool isBoolKeyword = false;
 
     treeNode *lookupNode;
     //symTab->debug(true);
@@ -274,22 +276,22 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
             {
             case NullK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case IfK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case WhileK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case ForK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case CompoundK:
@@ -300,7 +302,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
 
                 emitComment((char *)"TOFF set:", tOffset);
                 emitComment((char *)"Compound Body");
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
 
                 tOffset = -2;
                 emitComment((char *)"TOFF set:", tOffset);
@@ -309,16 +311,16 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
 
             case ReturnK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case BreakK:
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case RangeK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             default:
@@ -334,7 +336,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
             {
             case VarK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case FuncK:
@@ -351,7 +353,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
                 emitComment((char *)"TOFF set:", tOffset);
 
                 emitRM((char *)"ST", 3, -1, 1, (char *)"Store return address");
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
 
                 //add standard closing
                 emitComment((char *)"Add standard closing in case there is no return statement");
@@ -370,7 +372,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
 
             case ParamK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             default:
@@ -385,7 +387,26 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
             switch (node->subkind.exp)
             {
             case OpK:
-                checkChildren(node, symTab);
+
+                if (node->op == QUESTION || node->op == CHSIGN)
+                {
+                    isUnary = true;
+                }
+
+                checkChildren(node, symTab, state);
+                //is a bool keyword with 2+ expressions
+                if (node->parent != NULL && (node->parent->op == AND || node->parent->op == OR))
+                {
+                    isBoolKeyword = true;
+                }
+
+                //need to pop
+                if ((node->op == AND || node->op == OR) && isBoolKeyword)
+                {
+
+                    increment_toffset(1);
+                    emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+                }
 
                 if (node->op == MULT)
                 {
@@ -427,17 +448,22 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
                 {
                     emitRO((char *)"RND", 3, 3, 6, (char *)"Op ?");
                 }
-                else if(node->op == EQ)
+                else if (node->op == EQ)
                 {
                     emitRO((char *)"TEQ", 3, 4, 3, (char *)"Op ==");
+                }
+                else if (node->op == GREATER)
+                {
+                    emitRO((char *)"TGT", 3, 4, 3, (char *)"Op >");
                 }
 
                 break;
 
             case ConstantK:
 
-                checkChildren(node, symTab);
-                if (!node->parent->isOp)
+                checkChildren(node, symTab, Normal);
+                //Lone integer constants
+                if (state == Normal)
                 {
                     emitComment((char *)"EXPRESSION");
                     if (node->expType == Integer)
@@ -454,19 +480,43 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
                     }
                 }
                 //our parent is an OP
-                else
+                else if (state == OpInCall)
                 {
                     if (node->expType == Integer)
                     {
-
-                        emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
-                        if (hasPushed == false && node->parent->op != CHSIGN)
+                        if (isBoolKeyword)
                         {
                             emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
                             decrement_toffset(1);
+                            isBoolKeyword = false;
+                        }
+
+                        if (isUnary)
+                        {
+                            emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+                            isUnary = false;
+                        }
+                        else if (hasPushed == false && node->parent->op != CHSIGN)
+                        {
+                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
+                            decrement_toffset(1);
+
+                            if (isUnary == false)
+                                emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
                             hasPushed = true;
                         }
                         else if (hasPushed == true && node->parent->op != CHSIGN)
+                        {
+                            if (isUnary == false)
+                                emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+
+                            increment_toffset(1);
+                            emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+                            hasPushed = false;
+                        }
+
+                        //If we have any hanging pushed we need to pop them left.
+                        if (hasPushed == true && node->parent->op != CHSIGN)
                         {
                             increment_toffset(1);
                             emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
@@ -502,13 +552,13 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
 
             case IdK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case AssignK:
             {
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 //check the scoping, this will determine the register to use
                 if (node->child[0]->scope == Local)
                     emitRM((char *)"ST", 3, node->child[0]->loc, 1, (char *)"Store variable", node->child[0]->attr.string);
@@ -519,7 +569,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
             }
             case InitK:
 
-                checkChildren(node, symTab);
+                checkChildren(node, symTab, Normal);
                 break;
 
             case CallK:
@@ -569,7 +619,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
                     {
                         //send the nodes through the check children to
                         //be handled in the switchcase
-                        checkChildren(node, symTab);
+                        checkChildren(node, symTab, OpInCall);
                         emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push parameter");
                     }
 
@@ -593,6 +643,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node)
 
                 //SPECIAL CASE!
                 //For loop above is dealing with children
+                isBoolKeyword = false;
 
                 break;
 
@@ -636,6 +687,6 @@ void gen_code(SymbolTable *symTab, TreeNode *tree)
     //Leave space for backpatch
     emitSkip(1);
     init_IO(symTab);
-    code_gen_traverse(symTab, tree);
+    code_gen_traverse(symTab, tree, Normal);
     init_and_globals();
 }

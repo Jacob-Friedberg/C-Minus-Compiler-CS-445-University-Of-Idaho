@@ -1,12 +1,19 @@
 // C-S21
 main()
 {
-     outputb(?1==0);
+     outputb(false  or  false);
+     outputb(false  or  true);
+     outputb(true  or  false);
+     outputb(true  or  true);
      outnl();
 
-     // test is a bit stochastic
-     outputb(?100000>0);
-     outputb(?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0  and  ?3>0);
-     outputb(?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0  or  ?3>0);
+     outputb(false  and  false);
+     outputb(false  and  true);
+     outputb(true  and  false);
+     outputb(true  and  true);
+     outnl();
+
+     outputb(not false);
+     outputb(not true);
      outnl();
 }
