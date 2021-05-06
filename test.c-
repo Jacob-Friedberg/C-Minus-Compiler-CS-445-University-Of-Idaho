@@ -1,19 +1,16 @@
 // C-S21
+int x[7];
+
 main()
 {
-     outputb(false  or  false);
-     outputb(false  or  true);
-     outputb(true  or  false);
-     outputb(true  or  true);
-     outnl();
+    x[3] = 1023;
+    output(x[3]++);
+    outnl();
+    output(x[3]);
+    outnl();
 
-     outputb(false  and  false);
-     outputb(false  and  true);
-     outputb(true  and  false);
-     outputb(true  and  true);
-     outnl();
-
-     outputb(not false);
-     outputb(not true);
-     outnl();
+    output(x[3]--);
+    outnl();
+    output(x[3]);
+    outnl();
 }

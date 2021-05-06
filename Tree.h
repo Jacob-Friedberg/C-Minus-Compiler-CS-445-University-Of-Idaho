@@ -131,8 +131,11 @@ typedef struct treeNode
     int size;
     bool isStatic;   // is staticly allocated?
     bool isUsed;
+    bool lhsAssign;
+    bool rhsAssign;
     bool isInit;
     bool isConst;
+    char *arrayIdentf;
 
     // even more semantic stuff will go here in later assignments.
 } TreeNode;

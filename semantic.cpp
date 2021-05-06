@@ -816,6 +816,12 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     {
                         node->expType = node->child[0]->expType;
                         node->undeclared = node->child[0]->undeclared;
+                        node->loc = node->child[0]->loc;
+                        node->arrayIdentf = strdup(node->child[0]->attr.name);
+                        node->scope = node->child[0]->scope;
+                        
+                        
+
                     }
 
                     //check that the array identifier child[0] is declared as type array

@@ -5,6 +5,8 @@ typedef enum TraverseState
 {
     Normal,
     OpInCall,
+    ArrayInCall,
+    OddAssignments,
 }TraverseState;
 
 
