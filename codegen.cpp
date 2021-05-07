@@ -568,14 +568,13 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 //We are an array and we came from an assignment.
                 else if (node->op == OPEN_BRACK && assignWithArray)
                 {
-                    //we have an index that is not nested. and is an identifer.
-                    if (node->child[1]->nodekind == ExpK && node->child[1]->subkind.exp == IdK)
+                    //we have an index that is not nested. and is an identifer or a constant
+                    //a[1] == 52
+                    if ((node->child[1]->nodekind == ExpK && node->child[1]->subkind.exp == IdK) ||node->child[1]->isConst)
                     {
                         node->child[1]->rhsAssign = true;
                         checkChildren(node, symTab, state);
                     }
-
-                    //If there are no nested stuff and just a const or identifier.
                 }
                 else
                 {
