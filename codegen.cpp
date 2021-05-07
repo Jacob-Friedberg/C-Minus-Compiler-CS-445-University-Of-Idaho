@@ -928,7 +928,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                     node->child[0]->lhsAssign = true;
 
                     //We have a constant on the right
-                    if (node->child[1]->isConst)
+                    if (node->child[1] != NULL && node->child[1]->isConst)
                         node->child[1]->rhsAssign = true;
                 }
 
