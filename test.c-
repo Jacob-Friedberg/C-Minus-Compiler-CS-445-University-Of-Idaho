@@ -1,16 +1,36 @@
 // C-S21
-int x[7];
-
 main()
 {
-    x[3] = 1023;
-    output(x[3]++);
-    outnl();
-    output(x[3]);
+    int x[300];
+    int z;
+
+    z = 5;
+    x[z] = 73;
+    output(x[z]);
     outnl();
 
-    output(x[3]--);
+    z = 5;
+    x[z] = 17;
+    z = 17;
+    x[z] = 5;
+    output(x[z]);
     outnl();
-    output(x[3]);
+    output(x[x[z]]);
+    outnl();
+    output(x[x[x[z]]]);
+    outnl();
+    output(x[x[x[x[z]]]]);
+    outnl();
+    output(x[x[x[x[x[z]]]]]);
+    outnl();
+    output(x[x[x[x[x[x[z]]]]]]);
+    outnl();
+    output(x[x[x[x[x[x[x[z]]]]]]]);
+    outnl();
+    output(x[x[x[x[x[x[x[x[z]]]]]]]]);
+    outnl();
+    output(x[x[x[x[x[x[x[x[x[z]]]]]]]]]);
+    outnl();
+    output(x[x[x[x[x[x[x[x[x[x[z]]]]]]]]]]);
     outnl();
 }
