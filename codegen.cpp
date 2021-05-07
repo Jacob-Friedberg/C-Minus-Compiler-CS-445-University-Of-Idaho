@@ -501,6 +501,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 {
                     isUnary = true;
                 }
+                
                 //Only works for single arrays
                 if (node->op == OPEN_BRACK && state == OpInCall)
                 {
