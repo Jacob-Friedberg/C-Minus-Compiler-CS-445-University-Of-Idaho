@@ -1,17 +1,11 @@
 // C-S21
+int x[3];
+int y[4];
 
 main()
 {
-    int x[7];
-
-    x[3] = 1023;
-    output(x[3]++);
-    outnl();
-    output(x[3]);
-    outnl();
-
-    output(x[3]--);
-    outnl();
-    output(x[3]);
+    x[2] = 73;
+    y[1] = 211;
+    output(x[2]+y[1]);
     outnl();
 }
