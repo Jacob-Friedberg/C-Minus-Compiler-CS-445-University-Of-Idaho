@@ -13,6 +13,8 @@ extern int globalOffset;
 int tOffset = 0;
 int foffset = 0;
 
+int pushCountArray = 0;
+
 int mainOffset;
 
 extern char srcFilename[256];
@@ -237,6 +239,45 @@ void checkChildren(TreeNode *node, SymbolTable *symTab, TraverseState state)
     }
 }
 
+void checkChildrenLeft(TreeNode *node, SymbolTable *symTab, TraverseState state)
+{
+
+    if (node->child[0] != NULL)
+    {
+        //printf("Child: %d ", i);
+        code_gen_traverse(symTab, node->child[0], state);
+    }
+}
+
+void checkChildrenRight(TreeNode *node, SymbolTable *symTab, TraverseState state)
+{
+    if (node->child[1] != NULL)
+    {
+        //printf("Child: %d ", i);
+        code_gen_traverse(symTab, node->child[1], state);
+    }
+}
+
+void checkChildrenLeftNormal(TreeNode *node, SymbolTable *symTab, TraverseState state)
+{
+
+    if (node->child[0] != NULL)
+    {
+        //printf("Child: %d ", i);
+        checkChildren(node->child[0], symTab, state);
+    }
+}
+
+void checkChildrenRightNormal(TreeNode *node, SymbolTable *symTab, TraverseState state)
+{
+
+    if (node->child[0] != NULL)
+    {
+        //printf("Child: %d ", i);
+        checkChildren(node->child[1], symTab, state);
+    }
+}
+
 void decrement_toffset(int numberOfDecrements)
 {
     for (int i = 0; i < numberOfDecrements; i++)
@@ -252,6 +293,91 @@ void increment_toffset(int numberOfIncrements)
     {
         tOffset++;
         emitComment((char *)"TOFF inc:", tOffset);
+    }
+}
+
+void push_left_side_array()
+{
+    emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
+    decrement_toffset(1);
+    pushCountArray++;
+}
+
+void pop_left_array(bool looping)
+{
+
+    if (looping)
+    {
+        //pop as many times as we pushed.
+        for (int i = 0; i < pushCountArray; i++)
+        {
+            increment_toffset(1);
+            emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+            emitRO((char *)"SUB", 3, 4, 3, (char *)"compute location from index");
+            emitRM((char *)"LD", 3, 0, 3, (char *)"Load array element");
+        }
+    }
+    else
+    {
+        increment_toffset(1);
+        emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+        emitRO((char *)"SUB", 3, 4, 3, (char *)"compute location from index");
+        emitRM((char *)"LD", 3, 0, 3, (char *)"Load array element");
+    }
+
+    //reset the count
+    pushCountArray = 0;
+}
+
+void emitOperator(treeNode *node)
+{
+    if (node->op == MULT)
+    {
+        emitRO((char *)"MUL", 3, 4, 3, (char *)"Op *");
+    }
+    else if (node->op == PLUS)
+    {
+        emitRO((char *)"ADD", 3, 4, 3, (char *)"Op +");
+    }
+    else if (node->op == MOD)
+    {
+        emitRO((char *)"MOD", 3, 4, 3, (char *)"Op %");
+    }
+    else if (node->op == DIV)
+    {
+        emitRO((char *)"DIV", 3, 4, 3, (char *)"Op /");
+    }
+    else if (node->op == MINUS)
+    {
+        emitRO((char *)"SUB", 3, 4, 3, (char *)"Op -");
+    }
+    else if (node->op == CHSIGN)
+    {
+        emitRO((char *)"NEG", 3, 3, 3, (char *)"Op unary -");
+    }
+    else if (node->op == NOT)
+    {
+        emitRO((char *)"XOR", 3, 3, 4, (char *)"Op XOR to get logical not");
+    }
+    else if (node->op == OR)
+    {
+        emitRO((char *)"OR", 3, 4, 3, (char *)"Op OR");
+    }
+    else if (node->op == AND)
+    {
+        emitRO((char *)"AND", 3, 4, 3, (char *)"Op AND");
+    }
+    else if (node->op == QUESTION)
+    {
+        emitRO((char *)"RND", 3, 3, 6, (char *)"Op ?");
+    }
+    else if (node->op == EQ)
+    {
+        emitRO((char *)"TEQ", 3, 4, 3, (char *)"Op ==");
+    }
+    else if (node->op == GREATER)
+    {
+        emitRO((char *)"TGT", 3, 4, 3, (char *)"Op >");
     }
 }
 
@@ -324,13 +450,8 @@ void nested_array_from_call(treeNode *node)
 
     //We have reached the bottom of the nest and need to pop and load elements
     //We should have node->child[0] = IdK and node->child[1] = Const or IdK
-    for (int i = 0; i < numOfNestedArrays; i++)
-    {
-        increment_toffset(1);
-        emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
-        emitRO((char *)"SUB", 3, 4, 3, (char *)"compute location from index");
-        emitRM((char *)"LD", 3, 0, 3, (char *)"Load array element");
-    }
+    //GLOBAL COUNTER IS KEPT SO WE DONT NEED TO.
+    pop_left_array(true);
 }
 
 void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
@@ -339,13 +460,12 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
     char typing[64];
     char scoping[64];
 
-    static bool hasPushed = false;
-    static bool hasPushedOpArray = false;
+    static bool hasPushedConst = false;
+    static bool hasPushedOp = false;
     static bool isUnary = false;
     static bool isBoolKeyword = false;
     static bool suppressPrint = false;
     static bool assignWithArray = false;
-    static bool arrayInOp = false;
     static bool suppressCompoundBody = false;
     static bool moreThanOneVariableInCall = false;
     static bool nestedArraysInAssign = false;
@@ -410,6 +530,11 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
             case ReturnK:
 
                 checkChildren(node, symTab, Normal);
+
+                emitComment((char *)"RETURN");
+                emitRM((char *)"LD", 3, -1, 1, (char *)"Load return address");
+                emitRM((char *)"LD", 1, 0, 1, (char *)"Adjust fp");
+                emitGoto(0, 3, (char *)"Return");
                 break;
 
             case BreakK:
@@ -502,72 +627,77 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                     isUnary = true;
                 }
 
-                checkChildren(node, symTab, state);
-
-                //is a bool keyword with 2+ expressions
-                if (node->parent != NULL && (node->parent->op == AND || node->parent->op == OR) && !arrayInOp)
+                //we are simple well formed array (x[2]++) that is being inc/dec
+                if (state == SimpleArrayIncDec)
                 {
-                    isBoolKeyword = true;
                 }
 
-                //need to pop
-                //We dont pop for arrays since we do that for them elsewhere specifically
-                if ((node->op == AND || node->op == OR) && isBoolKeyword)
+                //we are an array from the assignmnet.
+                if (state == SimpleArrayAssignment && node->op == OPEN_BRACK)
                 {
+                    emitRM((char *)"LDC", 3, node->child[1]->attr.value, 6, "Load integer constant");
+                    emitRM((char *)"ST", 3, tOffset, 1, "Push index");
+
+                    decrement_toffset(1);
+                }
+
+                //we are the initial OP for the call and this is only for arrays
+                if (state == OpInCall && (node->parent->nodekind == ExpK && node->parent->subkind.exp == CallK) && node->child[1] != NULL && (node->child[0]->op == OPEN_BRACK || node->child[1]->op == OPEN_BRACK))
+                {
+                    //checking the left children
+                    checkChildren(node->child[0], symTab, state);
+
+                    push_left_side_array();
+
+                    //check right side
+                    checkChildren(node->child[1], symTab, state);
 
                     increment_toffset(1);
-                    emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop leftss into ac1");
+                    emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+                }
+                //for nested operators, this wont work for arrays.
+                else if (state == OpInCall && moreThanOneVariableInCall)
+                {
+                    checkChildren(node, symTab, state);
+
+                    if (node->op != QUESTION && node->op != CHSIGN)
+                    {
+                        if ((node->parent->nodekind == ExpK && node->parent->subkind.exp == CallK))
+                        {
+                            emitOperator(node);
+                            break;
+                        }
+
+                        emitOperator(node);
+                        if (hasPushedOp == false)
+                        {
+
+                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
+                            decrement_toffset(1);
+
+                            hasPushedOp = true;
+                        }
+                        else if (hasPushedOp)
+                        {
+                            increment_toffset(1);
+                            emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+
+                            hasPushedOp = false;
+                        }
+
+                        break;
+                    }
+                    else
+                        break;
+                }
+                else
+                {
+
+                    //foo2(node);
+                    checkChildren(node, symTab, state);
                 }
 
-                if (node->op == MULT)
-                {
-                    emitRO((char *)"MUL", 3, 4, 3, (char *)"Op *");
-                }
-                else if (node->op == PLUS)
-                {
-                    emitRO((char *)"ADD", 3, 4, 3, (char *)"Op +");
-                }
-                else if (node->op == MOD)
-                {
-                    emitRO((char *)"MOD", 3, 4, 3, (char *)"Op %");
-                }
-                else if (node->op == DIV)
-                {
-                    emitRO((char *)"DIV", 3, 4, 3, (char *)"Op /");
-                }
-                else if (node->op == MINUS)
-                {
-                    emitRO((char *)"SUB", 3, 4, 3, (char *)"Op -");
-                }
-                else if (node->op == CHSIGN)
-                {
-                    emitRO((char *)"NEG", 3, 3, 3, (char *)"Op unary -");
-                }
-                else if (node->op == NOT)
-                {
-                    emitRO((char *)"XOR", 3, 3, 4, (char *)"Op XOR to get logical not");
-                }
-                else if (node->op == OR)
-                {
-                    emitRO((char *)"OR", 3, 4, 3, (char *)"Op OR");
-                }
-                else if (node->op == AND)
-                {
-                    emitRO((char *)"AND", 3, 4, 3, (char *)"Op AND");
-                }
-                else if (node->op == QUESTION)
-                {
-                    emitRO((char *)"RND", 3, 3, 6, (char *)"Op ?");
-                }
-                else if (node->op == EQ)
-                {
-                    emitRO((char *)"TEQ", 3, 4, 3, (char *)"Op ==");
-                }
-                else if (node->op == GREATER)
-                {
-                    emitRO((char *)"TGT", 3, 4, 3, (char *)"Op >");
-                }
-
+                emitOperator(node);
                 break;
 
             case ConstantK:
@@ -597,43 +727,54 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 {
                     if (node->expType == Integer)
                     {
-                        if (isBoolKeyword)
-                        {
-                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
-                            decrement_toffset(1);
-                            isBoolKeyword = false;
-                        }
 
-                        if (isUnary)
+                        if (node->parent->op == CHSIGN)
                         {
                             emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
-                            isUnary = false;
                         }
-                        else if (hasPushed == false && node->parent->op != CHSIGN)
+                        //This is printing for arrays in calls
+                        else if (hasPushedConst == false && node->parent->op != CHSIGN)
                         {
-                            emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
-                            decrement_toffset(1);
-
-                            if (isUnary == false)
-                                emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
-                            hasPushed = true;
-                        }
-                        else if (hasPushed == true && node->parent->op != CHSIGN)
-                        {
-                            if (isUnary == false)
+                            if (node->parent->op != OPEN_BRACK)
+                            {
                                 emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
 
-                            increment_toffset(1);
-                            emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
-                            hasPushed = false;
-                        }
+                                //has a unary
+                                if (node->parent->isOp && node->parent->op == QUESTION)
+                                {
+                                    emitOperator(node->parent);
+                                }
 
-                        //If we have any hanging pushed we need to pop them left.
-                        if (hasPushed == true && node->parent->op != CHSIGN)
+                                emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
+                                decrement_toffset(1);
+                                hasPushedConst = true;
+                            }
+                            //we are open brack therefore the index of an array
+                            else if (node->parent->op == OPEN_BRACK)
+                            {
+                                emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+                                pop_left_array(false);
+                            }
+                            else
+                                emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+                        }
+                        else if (hasPushedConst == true && node->parent->op != CHSIGN)
                         {
-                            increment_toffset(1);
-                            emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
-                            hasPushed = false;
+
+                            emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load integer constant");
+
+                            if (node->parent->op != OPEN_BRACK)
+                            {
+                                //has a unary
+                                if (node->parent->isOp && node->parent->op == QUESTION)
+                                {
+                                    emitOperator(node->parent);
+                                }
+
+                                increment_toffset(1);
+                                emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+                                hasPushedConst = false;
+                            }
                         }
                     }
                     //Assuming always Not/XOR
@@ -646,19 +787,22 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                     {
                         emitRM((char *)"LDC", 3, node->attr.value, 6, (char *)"Load Boolean constant");
 
-                        if (hasPushed == false)
+                        if (hasPushedConst == false)
                         {
                             emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
                             decrement_toffset(1);
-                            hasPushed = true;
+                            hasPushedConst = true;
                         }
                         else
                         {
                             increment_toffset(1);
                             emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
-                            hasPushed = false;
+                            hasPushedConst = false;
                         }
                     }
+                }
+                else if (state == SimpleArrayAssignment)
+                {
                 }
 
                 break;
@@ -671,28 +815,39 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 //We check what reg to place things in and push and pop accordingly
                 if (state == OpInCall)
                 {
+                    if (!node->isArray)
+                    {
+                        if (node->scope == Local)
+                            emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
+                        else if (node->scope == Global)
+                            emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
+                    }
+                    else
+                    {
+                        if (node->scope == Local)
+                            emitRM((char *)"LDA", 3, node->loc - 1, 1, (char *)"Load address of base of array", node->attr.string);
+                        else if (node->scope == Global)
+                            emitRM((char *)"LDA", 3, node->loc - 1, 0, (char *)"Load address of base of array", node->attr.string);
 
-                    if (node->scope == Local)
-                        emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
-                    else if (node->scope == Global)
-                        emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
+                        push_left_side_array();
+                    }
 
                     //Dont want to do this twice, if we are an array we have code gen elsewhere
-                    if (hasPushed == false && !node->isArray /*&& node->parent->op == OPEN_BRACK*/)
+                    if (hasPushedConst == false && !node->isArray /*&& node->parent->op == OPEN_BRACK*/)
                     {
                         emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
                         decrement_toffset(1);
-                        hasPushed = true;
+                        hasPushedConst = true;
                     }
-                    else if (hasPushed && !node->isArray /*&& node->parent->op == OPEN_BRACK*/)
+                    else if (hasPushedConst && !node->isArray /*&& node->parent->op == OPEN_BRACK*/)
                     {
                         increment_toffset(1);
                         emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
-                        hasPushed = false;
+                        hasPushedConst = false;
                     }
                 }
                 //Assignment += -= /= etc.
-                else if (state == OddAssignments && !arrayInOp)
+                else if (state == OddAssignments)
                 {
                     //Unary inc or dec
                     if (node->lhsAssign)
@@ -721,18 +876,80 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                             emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
                     }
                 }
+                else if (state == StandardAssignment)
+                {
+                    if (node->scope == Local)
+                        emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
+                    else if (node->scope == Global)
+                        emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
+                    else if (node->scope == LocalStatic)
+                        emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
+                }
+                else if (state == SimpleArrayAssignment)
+                {
+                }
                 break;
 
             case AssignK:
-            {
-               
 
-                if (node->op == INC || node->op == DEC)
+                emitComment((char *)"EXPRESSION");
+                //if we are an assignment with an array on either side.
+                //have not implemented complex expressions a[2] = x+2+3
+                if (node->op == ASS && (node->child[0]->op == OPEN_BRACK && !node->child[1]->isOp))
                 {
-                    node->child[0]->lhsAssign = true;
-                    checkChildren(node, symTab, OddAssignments);
+                    checkChildrenLeft(node, symTab, SimpleArrayAssignment);
+
+                    //constant on the rhs so we can just load it
+                    if (node->child[1]->isConst)
+                        emitRM((char *)"LDC", 3, node->child[1]->attr.value, 6, (char *)"Load integer constant");
+
+                    increment_toffset(1);
+
+                    emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop index");
+
+                    if (node->child[0]->scope == Local)
+                        emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                    else if (node->child[0]->scope == Global)
+                        emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 0, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                    else if (node->child[0]->scope == Parameter)
+                        emitRM((char *)"LD", 5, (node->child[0]->loc), 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+
+                    emitRO((char *)"SUB", 5, 5, 4, (char *)"Compute offset of value");
+
+                    emitRM((char *)"ST", 3, 0, 5, (char *)"Store variable", node->child[0]->arrayIdentf);
                 }
-                else if (node->op == ADDASS || node->op == MULASS || node->op == SUBASS || node->op == DIVASS)
+                else if (node->op == INC || node->op == DEC)
+                {
+                    if (node->child[0]->nodekind == ExpK && node->child[0]->subkind.exp == IdK)
+                    {
+
+                        if (node->child[0]->scope == Local)
+                            emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
+                        else if (node->child[0]->scope == Global)
+                            emitRM((char *)"LD", 3, (node->child[0]->loc), 0, (char *)"Load lhs variable", node->child[0]->attr.name);
+                        else if (node->child[0]->scope == Parameter)
+                            emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
+
+                        if (node->op == INC)
+                            emitRM((char *)"LDA", 3, 1, 3, (char *)"increment value of", node->child[0]->attr.name);
+                        else
+                            emitRM((char *)"LDA", 3, -1, 3, (char *)"decrement value of", node->child[0]->attr.name);
+
+                        if (node->child[0]->scope == Local)
+                            emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
+                        else if (node->child[0]->scope == Global)
+                            emitRM((char *)"ST", 3, (node->child[0]->loc), 0, (char *)"Store variable", node->child[0]->attr.name);
+                        else if (node->child[0]->scope == Parameter)
+                            emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
+
+                        break;
+                    }
+                    
+                    checkChildren(node, symTab, SimpleArrayIncDec);
+                }
+                //dont do this with arrays
+                else if ((node->op == ADDASS || node->op == MULASS || node->op == SUBASS || node->op == DIVASS) &&
+                         (node->child[0]->op != OPEN_BRACK || node->child[1]->op != OPEN_BRACK))
                 {
                     //emitComment((char *)"EXPRESSION");
 
@@ -775,6 +992,11 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 
                     checkChildren(node, symTab, OddAssignments);
                 }
+                //if we have an identifier on the rhs
+                else if (node->child[1] != NULL && (node->child[1]->nodekind == ExpK && node->child[1]->subkind.exp == IdK))
+                {
+                    checkChildren(node, symTab, StandardAssignment);
+                }
                 else
                     checkChildren(node, symTab, Normal);
 
@@ -788,7 +1010,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                     emitRO((char *)"SUB", 3, 4, 3, (char *)"op -=");
                 }
 
-                //check the scoping, this will determine the register to use
+                //check the scoping, this will determine the register to use Only if we are not an array
                 if (node->child[0]->scope == Local && node->child[0]->op != OPEN_BRACK)
                     emitRM((char *)"ST", 3, node->child[0]->loc, 1, (char *)"Store variable", node->child[0]->attr.string);
                 else if (node->child[0]->scope == Global && node->child[0]->op != OPEN_BRACK)
@@ -801,7 +1023,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 suppressPrint = false;
 
                 break;
-            }
+
             case InitK:
 
                 checkChildren(node, symTab, Normal);
@@ -859,8 +1081,8 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                         //send the nodes through the check children to
                         //be handled in the switchcase
 
-                        //we have some kind of Op in the call thats not an array
-                        if (node->child[0]->isOp && node->child[0]->op != OPEN_BRACK)
+                        //we have some kind of Op in the call thats not an array or any unary operations
+                        if (node->child[0]->isOp && node->child[0]->op != OPEN_BRACK && (node->child[0]->op != CHSIGN && node->child[0]->op != INC && node->child[0]->op != DEC))
                             moreThanOneVariableInCall = true;
 
                         checkChildren(node, symTab, OpInCall);
@@ -895,6 +1117,8 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 //SPECIAL CASE!
                 //For loop above is dealing with children
                 isBoolKeyword = false;
+                hasPushedOp = false;
+                hasPushedConst = false;
 
                 break;
 

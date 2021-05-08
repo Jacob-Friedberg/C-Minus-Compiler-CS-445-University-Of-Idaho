@@ -37,6 +37,7 @@ TreeNode *newDeclNode(DeclKind kind, ExpType type, TokenData *token, TreeNode *c
     treeNode->scope = None;
     treeNode->size = -99;
     treeNode->attrSet = false;
+    //treeNode->sideOfAssignment = unknownSide;
 
     return treeNode;
 }
@@ -67,6 +68,7 @@ TreeNode *newStmtNode(StmtKind kind, TokenData *token, TreeNode *c0, TreeNode *c
     treeNode->numParams = 0;
     treeNode->isUsed = false;
     treeNode->isIo = false;
+    //treeNode->sideOfAssignment = unknownSide;
 
     treeNode->attrSet = false;
 
@@ -96,6 +98,7 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
     treeNode->isUsed = false;
     treeNode->isIo = false;
     treeNode->expType = UndefinedType;
+    //treeNode->sideOfAssignment = unknownSide;
 
     treeNode->attrSet = false;
 

@@ -7,6 +7,9 @@ typedef enum TraverseState
     OpInCall,
     ArrayInCall,
     OddAssignments,
+    SimpleArrayAssignment,
+    SimpleArrayIncDec,
+    StandardAssignment,
 }TraverseState;
 
 

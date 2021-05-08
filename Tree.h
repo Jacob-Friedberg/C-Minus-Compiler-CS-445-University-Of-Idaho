@@ -11,6 +11,14 @@ typedef int OpKind;
 
 // Kinds of Statements
 //typedef enum {DeclK, StmtK, ExpK} NodeKind;
+
+enum WhatSide
+{
+    leftSide,
+    rightSide,
+    unknownSide,
+};
+
 enum UnionType
 {
     cvalue,
@@ -109,6 +117,7 @@ typedef struct treeNode
         char *name;           // used when IdK
     } attr;
     UnionType unionType;
+    WhatSide sideOfAssignment;
     //Depth of the stack of scopes when it is entered into the symbol table 
     bool isRangeKBy;
     bool isRangeK;

@@ -820,6 +820,8 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                         node->arrayIdentf = strdup(node->child[0]->attr.name);
                         node->scope = node->child[0]->scope;
                         
+                        node->isArray = true;
+                        
                         
 
                     }

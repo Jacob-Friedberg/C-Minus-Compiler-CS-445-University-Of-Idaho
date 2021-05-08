@@ -363,6 +363,11 @@ breakStmt       : BREAK SEMI                                    { $$ = newStmtNo
 exp             : mutable assignOp exp                          { $$ = newExpNode(AssignK,$2,$1,$3);
                                                                   $$->attr.string = $2->tokenStr;
                                                                   $$->attrSet = true;
+                                                                  
+                                                                  $1->sideOfAssignment = leftSide;
+                                                                  $3->sideOfAssignment = rightSide;
+
+                                                                    
                                                                 }
 
                 | mutable INC                                   { $$ = newExpNode(AssignK,$2,$1);
@@ -492,6 +497,7 @@ mutable         : ID                                            { $$ = newExpNod
                                                                   node->isArray = true;
                                                                   $$ = newExpNode(OpK,$2,node,$3);
                                                                   $$->attr.name = $2->tokenStr;
+                                                                  $$->tokenStr = $1->tokenStr;
                                                                   $$->attrSet = true;
                                                                   $$->isArray = true;
                                                                 }
