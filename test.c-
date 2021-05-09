@@ -1,23 +1,17 @@
-bool g, h[10];
-
-int dog(int a, b[])
-{
-      a = 444;
-      b[9] = 555;
-
-      return *b;
-}
+// C-S21
 
 main()
 {
-      int x, y[10];
+    int x[7];
 
-      g = true;
-      h[9] = false;
+    x[3] = 1023;
+    output(x[3]++);
+    outnl();
+    output(x[3]);
+    outnl();
 
-      x = 111;
-      y[9] = 222;
-
-      output(333 + dog(x, y));
+    output(x[3]--);
+    outnl();
+    output(x[3]);
+    outnl();
 }
-

@@ -98,7 +98,7 @@ TreeNode *newExpNode(ExpKind kind, TokenData *token, TreeNode *c0, TreeNode *c1,
     treeNode->isUsed = false;
     treeNode->isIo = false;
     treeNode->expType = UndefinedType;
-    //treeNode->sideOfAssignment = unknownSide;
+    treeNode->sideOfAssignment = unknownSide;
 
     treeNode->attrSet = false;
 
