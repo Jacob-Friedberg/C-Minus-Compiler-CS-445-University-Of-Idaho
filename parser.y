@@ -678,7 +678,7 @@ int main(int argc, char *argv[])
     extern int globalOffset;
     char filename[256];
     
-    TraverseState state = Normal;
+    TraverseState state;
     
 
     initErrorProcessing();

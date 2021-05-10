@@ -5,10 +5,13 @@
 #include "codegen.h"
 #include <string.h>
 #include <string>
+#include <stack>
 
 void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state);
 
 extern int globalOffset;
+
+std::stack<int> locationStack;
 
 #define DUMMY_REG_6 6
 #define IS_ARRAY(node) ((node)->isOp && (node)->op == OPEN_BRACK)
@@ -497,16 +500,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
     char typing[64];
     char scoping[64];
 
-    static bool hasPushedConst = false;
-    static bool hasPushedOp = false;
-    static bool isUnary = false;
-    static bool isBoolKeyword = false;
-    static bool suppressPrint = false;
-    static bool assignWithArray = false;
     static bool suppressCompoundBody = false;
-    static bool moreThanOneVariableInCall = false;
-    static bool nestedArraysInAssign = false;
-    static bool nestedArraysInCall = false;
 
     treeNode *tmpNode;
 
@@ -544,7 +538,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                     emitComment((char *)"THEN");
                     code_gen_traverse(symTab, node->child[1], state);
 
-                    backPatchAJumpToHere("JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
+                    backPatchAJumpToHere((char *)"JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
 
                     emitComment((char *)"END IF");
                 }
@@ -559,13 +553,13 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                     code_gen_traverse(symTab, node->child[1], state);
                     rememberFixup2 = emitSkip(1);
 
-                    backPatchAJumpToHere("JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
+                    backPatchAJumpToHere((char *)"JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
 
                     //Traverse else clause
                     emitComment((char *)"ELSE");
                     code_gen_traverse(symTab, node->child[2], state);
 
-                    backPatchAJumpToHere(rememberFixup2, "Jump around the ELSE [backpatch]");
+                    backPatchAJumpToHere(rememberFixup2, (char *)"Jump around the ELSE [backpatch]");
 
                     emitComment((char *)"END IF");
                 }
@@ -585,17 +579,19 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 int rememberFixupBeginingOfDo = emitSkip(1);
                 //make room to jump to end of loop when finished
                 int rememberFixupEndofLoopTest = emitSkip(1);
-                state.endOfLoopAddress = rememberFixupEndofLoopTest;
-                
-                backPatchAJumpToHere("JNZ",3,rememberFixupBeginingOfDo,(char*)"Jump to while part");
+
+                locationStack.push(rememberFixupEndofLoopTest);
+                backPatchAJumpToHere((char *)"JNZ", 3, rememberFixupBeginingOfDo, (char *)"Jump to while part");
 
                 emitComment((char *)"DO");
                 code_gen_traverse(symTab, node->child[1], state);
+
                 emitGotoAbs(rememberTopOfLoop, (char *)"go to beginning of loop");
 
                 backPatchAJumpToHere(rememberFixupEndofLoopTest, (char *)"Jump past loop [backpatch]");
 
-                emitComment((char*) "END WHILE");
+                locationStack.pop();
+                emitComment((char *)"END WHILE");
             }
             break;
 
@@ -628,9 +624,15 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 
             case ReturnK:
 
+                emitComment((char *)"RETURN");
                 checkChildren(node, symTab, state);
 
-                emitComment((char *)"RETURN");
+                //we have a return value
+                if (node->child[0] != NULL)
+                {
+                    emitRM((char *)"LDA", 2, 0, 3, (char *)"Copy result to return register");
+                }
+
                 emitRM((char *)"LD", 3, -1, 1, (char *)"Load return address");
                 emitRM((char *)"LD", 1, 0, 1, (char *)"Adjust fp");
                 emitGoto(0, 3, (char *)"Return");
@@ -639,7 +641,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
             case BreakK:
                 emitComment((char *)"BREAK");
 
-                emitGotoAbs(state.endOfLoopAddress,(char*)"break");
+                emitGotoAbs(locationStack.top(), (char *)"break");
 
                 break;
 
@@ -731,7 +733,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 if (node->op == OPEN_BRACK && node->sideOfAssignment == leftSide)
                 {
                     checkChildren(node, symTab, state);
-                    emitRM((char *)"ST", 3, tOffset, 1, "Push index");
+                    emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push index");
                     decrement_toffset(1);
                 }
                 else if (node->op == OPEN_BRACK && (node->parent->op == INC || node->parent->op == DEC))
@@ -1460,11 +1462,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 tOffset = ghostFrameToff;
                 emitComment((char *)"TOFF set:", tOffset);
 
-                //SPECIAL CASE!
-                //For loop above is dealing with children
-                isBoolKeyword = false;
-                hasPushedOp = false;
-                hasPushedConst = false;
+
 
                 break;
 
@@ -1508,9 +1506,7 @@ void gen_code(SymbolTable *symTab, TreeNode *tree)
 {
     //Leave space for backpatch
     TraverseState state;
-    state.endOfLoopAddress = 0;
-    state.flags = Normal;
-
+    state.suppressSiblings = false;
     emitSkip(1);
     init_IO(symTab);
     code_gen_traverse(symTab, tree, state);

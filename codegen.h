@@ -15,6 +15,7 @@ typedef enum TraverseStateFlags
 typedef struct TraverseState
 {
     int endOfLoopAddress;
+    bool suppressSiblings;
     TraverseStateFlags flags;
 }TraverseState;
 
