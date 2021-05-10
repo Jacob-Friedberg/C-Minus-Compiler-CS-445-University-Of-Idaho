@@ -450,11 +450,13 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                     node->child[0]->isRangeK = true;
                     node->child[1]->isInit = true;
                     node->child[1]->isRangeK = true;
+                    localOffset -= 2;
                     //Special case of a optional step
                     if (node->child[2] != NULL)
                     {
                         node->child[2]->isInit = true;
                         node->child[2]->isRangeKBy = true;
+                        localOffset--;
                     }
                 }
                 checkChildren(node, symTab, DONT_SUPPRESS_CHILD_SCOPE);
@@ -504,66 +506,98 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
 
                 //lookupNode = (treeNode *)symTab->lookupGlobal(node->attr.name);
                 //If the symbol does not exist then we can add it
-                if (symTab->insert(std::string(node->attr.name), (void *)node))
+                if (node->isStatic)
                 {
-                    node->depth = symTab->depth();
-
-                    node->isUsed = false;
-
-                    if (!node->isArray)
-                        node->size = 1;
-                    //Special handleing for the case of init variables in for loops
-                    //MEMORY set the size of our range.
-                    if (node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
+                    if (symTab->insertGlobal(std::string(node->attr.name), (void *)node))
                     {
-                        node->isInit = true;
-                    }
-                    else
-                    {
-                        node->isInit = false;
-                    }
+                        node->depth = symTab->depth();
 
-                    node->isInitErrorThrown = false;
+                        node->isUsed = false;
 
-                    //we are at the global scope so set our scope to global
-                    //Assuming anything other than global scope is a local. PROB WRONG!!!
-                    if (node->depth == 1)
-                    {
-                        node->scope = Global;
-
-                        node->loc = globalOffset;
-
-                        globalOffset -= node->size;
-                    }
-                    //Anything else should be a local or localstatic
-                    else if (node->depth > 1)
-                    {
-                        //We are either a static or a local variable
-                        if (node->isStatic)
+                        if (!node->isArray)
+                            node->size = 1;
+                        //Special handleing for the case of init variables in for loops
+                        //MEMORY set the size of our range.
+                        if (node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
                         {
-                            node->scope = LocalStatic;
-
-                            node->loc = globalOffset;
-                            globalOffset -= node->size;
+                            node->isInit = true;
                         }
                         else
                         {
-                            node->scope = Local;
-                            node->loc = localOffset;
-                            //Decrement the offset by the size of our variable
-                            localOffset -= node->size;
+                            node->isInit = false;
                         }
+
+                        node->isInitErrorThrown = false;
+
+                        node->scope = LocalStatic;
+
+                        node->loc = globalOffset;
+                        globalOffset -= node->size;
                     }
                 }
-                //Symbol already exists in the table. Throw an error
-                else
+                if (!node->isStatic)
                 {
-                    lookupNode = (treeNode *)symTab->lookup(node->attr.name);
-                    printf("ERROR(%d): Symbol '%s' is already declared at line %d.\n",
-                           node->lineno,
-                           lookupNode->attr.name,
-                           lookupNode->lineno);
-                    NUM_ERRORS++;
+                    if (symTab->insert(std::string(node->attr.name), (void *)node))
+                    {
+                        node->depth = symTab->depth();
+
+                        node->isUsed = false;
+
+                        if (!node->isArray)
+                            node->size = 1;
+                        //Special handleing for the case of init variables in for loops
+                        //MEMORY set the size of our range.
+                        if (node->parent != NULL && node->parent->nodekind == StmtK && node->parent->subkind.stmt == ForK)
+                        {
+                            node->isInit = true;
+                        }
+                        else
+                        {
+                            node->isInit = false;
+                        }
+
+                        node->isInitErrorThrown = false;
+
+                        //we are at the global scope so set our scope to global
+                        //Assuming anything other than global scope is a local. PROB WRONG!!!
+                        if (node->depth == 1)
+                        {
+                            node->scope = Global;
+
+                            node->loc = globalOffset;
+
+                            globalOffset -= node->size;
+                        }
+                        //Anything else should be a local or localstatic
+                        else if (node->depth > 1)
+                        {
+                            //We are either a static or a local variable
+                            if (node->isStatic)
+                            {
+                                node->scope = LocalStatic;
+
+                                node->loc = globalOffset;
+                                globalOffset -= node->size;
+                            }
+                            else
+                            {
+                                node->scope = Local;
+                                node->loc = localOffset;
+                                //Decrement the offset by the size of our variable
+                                localOffset -= node->size;
+                            }
+                        }
+                    }
+                    //Symbol already exists in the table. Throw an error
+                    else
+                    {
+                        lookupNode = (treeNode *)symTab->lookup(node->attr.name);
+                        printf("ERROR(%d): Symbol '%s' is already declared at line %d.\n",
+                               node->lineno,
+                               lookupNode->attr.name,
+                               lookupNode->lineno);
+                        NUM_ERRORS++;
+                    }
                 }
 
                 //----INITILIZATION OF A VARAIBLE IS HERE----
@@ -819,11 +853,8 @@ void checkTree2(SymbolTable *symTab, TreeNode *node, bool parentSuppressScope, T
                         node->loc = node->child[0]->loc;
                         node->arrayIdentf = strdup(node->child[0]->attr.name);
                         node->scope = node->child[0]->scope;
-                        
-                        node->isArray = true;
-                        
-                        
 
+                        node->isArray = true;
                     }
 
                     //check that the array identifier child[0] is declared as type array
@@ -1389,7 +1420,7 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                 if (lhs != UndefinedType)
                 {
                     //Hack: Output prints voids when mult appears
-                    if (lhs == Void  && !lhsNode->isFunc)
+                    if (lhs == Void && !lhsNode->isFunc)
                     {
                         printf("ERROR(%d): '%s' requires operands of type int but lhs is of type %s.\n",
                                parentNode->lineno, parentNode->attr.string,
@@ -1638,6 +1669,8 @@ ExpType typeTable(TreeNode *parentNode, treeNode *lhsNode, treeNode *rhsNode)
                     printf("ERROR(%d): The operation 'not' does not work with arrays.\n", parentNode->lineno);
                     NUM_ERRORS++;
                 }
+
+                parentNode->isConst = true;
 
                 return Boolean;
             }

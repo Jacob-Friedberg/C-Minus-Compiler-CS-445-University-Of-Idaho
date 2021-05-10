@@ -8,10 +8,12 @@
 #include <stack>
 
 void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state);
+void code_gen_traverse_single_node(SymbolTable *symTab, TreeNode *node, TraverseState state);
 
 extern int globalOffset;
 
 std::stack<int> locationStack;
+SymbolTable *globalSymTab;
 
 #define DUMMY_REG_6 6
 #define IS_ARRAY(node) ((node)->isOp && (node)->op == OPEN_BRACK)
@@ -34,6 +36,7 @@ void checkInitGlobal(std::string symbolName, void *ptr)
 {
     treeNode *nodeptr;
     nodeptr = (treeNode *)ptr;
+    TraverseState state;
 
     //If we are not a function we must be a global or static variable
     if (!nodeptr->isFunc)
@@ -44,6 +47,15 @@ void checkInitGlobal(std::string symbolName, void *ptr)
             char *tmp = strdup(symbolName.c_str());
             emitRM((char *)"LDC", 3, nodeptr->size - 1, 6, (char *)"load size of array", tmp);
             emitRM((char *)"ST", 3, nodeptr->loc, 0, (char *)"save size of array", tmp);
+        }
+        else
+        {
+            char *tmp = strdup(symbolName.c_str());
+            if (nodeptr->child[0] != NULL)
+            {
+                code_gen_traverse_single_node(globalSymTab, nodeptr->child[0], state);
+                emitRM((char *)"ST", 3, nodeptr->loc, 0, (char *)"Store variable", tmp);
+            }
         }
     }
 }
@@ -492,9 +504,20 @@ void nested_array_from_call(treeNode *node)
     //GLOBAL COUNTER IS KEPT SO WE DONT NEED TO.
     pop_left_array(true);
 }
+
+void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
+{
+
+    while (node != NULL)
+    {
+        code_gen_traverse_single_node(symTab, node, state);
+        node = node->sibling;
+    }
+}
+
 //End of loop address is a special variable that contains the location for break statements
 //NOTE: we put it on the stack because we need to scope the return to the loop you are in.
-void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
+void code_gen_traverse_single_node(SymbolTable *symTab, TreeNode *node, TraverseState state)
 {
     int ghostFrameToff = 0;
     char typing[64];
@@ -506,303 +529,394 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 
     treeNode *lookupNode;
     //symTab->debug(true);
-    while (node != NULL)
+
+    convertExpTypeToString(node->expType, typing);
+    convertScopeKindToString(node->scope, scoping);
+
+    //Refactored switch
+    //Process statements
+    if (node->nodekind == StmtK)
     {
-        convertExpTypeToString(node->expType, typing);
-        convertScopeKindToString(node->scope, scoping);
-
-        //Refactored switch
-        //Process statements
-        if (node->nodekind == StmtK)
+        switch (node->subkind.stmt)
         {
-            switch (node->subkind.stmt)
-            {
-            case NullK:
+        case NullK:
 
-                checkChildren(node, symTab, state);
-                break;
-
-            case IfK:
-            {
-                //Fixup 1 handles getting over the TRUE code.
-                //Fixup 2 handles getting over the FALSE code When finishing the true code.
-                int rememberFixup1, rememberFixup2;
-
-                //Handle if then
-                if (node->child[2] == NULL)
-                {
-                    //Traverse the expression
-                    emitComment((char *)"IF");
-                    code_gen_traverse(symTab, node->child[0], state);
-                    rememberFixup1 = emitSkip(1);
-                    emitComment((char *)"THEN");
-                    code_gen_traverse(symTab, node->child[1], state);
-
-                    backPatchAJumpToHere((char *)"JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
-
-                    emitComment((char *)"END IF");
-                }
-                //handle if then else
-                else
-                {
-                    //Traverse the expression
-                    emitComment((char *)"IF");
-                    code_gen_traverse(symTab, node->child[0], state);
-                    rememberFixup1 = emitSkip(1);
-                    emitComment((char *)"THEN");
-                    code_gen_traverse(symTab, node->child[1], state);
-                    rememberFixup2 = emitSkip(1);
-
-                    backPatchAJumpToHere((char *)"JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
-
-                    //Traverse else clause
-                    emitComment((char *)"ELSE");
-                    code_gen_traverse(symTab, node->child[2], state);
-
-                    backPatchAJumpToHere(rememberFixup2, (char *)"Jump around the ELSE [backpatch]");
-
-                    emitComment((char *)"END IF");
-                }
-            }
-
+            checkChildren(node, symTab, state);
             break;
 
-            case WhileK:
+        case IfK:
+        {
+            //Fixup 1 handles getting over the TRUE code.
+            //Fixup 2 handles getting over the FALSE code When finishing the true code.
+            int rememberFixup1, rememberFixup2;
+
+            //Handle if then
+            if (node->child[2] == NULL)
             {
-                //remember were the top of our loop is for repeating
-                int rememberTopOfLoop = emitSkip(0);
-                //traverse the expression
-                emitComment((char *)"WHILE");
+                //Traverse the expression
+                emitComment((char *)"IF");
                 code_gen_traverse(symTab, node->child[0], state);
-
-                //make room to jump to begining of the DO
-                int rememberFixupBeginingOfDo = emitSkip(1);
-                //make room to jump to end of loop when finished
-                int rememberFixupEndofLoopTest = emitSkip(1);
-
-                locationStack.push(rememberFixupEndofLoopTest);
-                backPatchAJumpToHere((char *)"JNZ", 3, rememberFixupBeginingOfDo, (char *)"Jump to while part");
-
-                emitComment((char *)"DO");
+                rememberFixup1 = emitSkip(1);
+                emitComment((char *)"THEN");
                 code_gen_traverse(symTab, node->child[1], state);
 
-                emitGotoAbs(rememberTopOfLoop, (char *)"go to beginning of loop");
+                backPatchAJumpToHere((char *)"JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
 
-                backPatchAJumpToHere(rememberFixupEndofLoopTest, (char *)"Jump past loop [backpatch]");
-
-                locationStack.pop();
-                emitComment((char *)"END WHILE");
+                emitComment((char *)"END IF");
             }
+            //handle if then else
+            else
+            {
+                //Traverse the expression
+                emitComment((char *)"IF");
+                code_gen_traverse(symTab, node->child[0], state);
+                rememberFixup1 = emitSkip(1);
+                emitComment((char *)"THEN");
+                code_gen_traverse(symTab, node->child[1], state);
+                rememberFixup2 = emitSkip(1);
+
+                backPatchAJumpToHere((char *)"JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
+
+                //Traverse else clause
+                emitComment((char *)"ELSE");
+                code_gen_traverse(symTab, node->child[2], state);
+
+                backPatchAJumpToHere(rememberFixup2, (char *)"Jump around the ELSE [backpatch]");
+
+                emitComment((char *)"END IF");
+            }
+        }
+
+        break;
+
+        case WhileK:
+        {
+            //remember were the top of our loop is for repeating
+            int rememberTopOfLoop = emitSkip(0);
+            //traverse the expression
+            emitComment((char *)"WHILE");
+            code_gen_traverse(symTab, node->child[0], state);
+
+            //make room to jump to begining of the DO
+            int rememberFixupBeginingOfDo = emitSkip(1);
+            //make room to jump to end of loop when finished
+            int rememberFixupEndofLoopTest = emitSkip(1);
+
+            locationStack.push(rememberFixupEndofLoopTest);
+            backPatchAJumpToHere((char *)"JNZ", 3, rememberFixupBeginingOfDo, (char *)"Jump to while part");
+
+            emitComment((char *)"DO");
+            code_gen_traverse(symTab, node->child[1], state);
+
+            emitGotoAbs(rememberTopOfLoop, (char *)"go to beginning of loop");
+
+            backPatchAJumpToHere(rememberFixupEndofLoopTest, (char *)"Jump past loop [backpatch]");
+
+            locationStack.pop();
+            emitComment((char *)"END WHILE");
+        }
+        break;
+
+        case ForK:
+        {
+
+            tOffset -= 3;
+            emitComment((char *)"TOFF set:", tOffset);
+            emitComment((char *)"FOR");
+
+            int tmpToff = tOffset;
+            int beginOfFor;
+            int ForFixup;
+
+            //Child[0] == Index variable
+            code_gen_traverse_single_node(symTab, node->child[0], state);
+
+            //Child[1] == rangek
+            code_gen_traverse_single_node(symTab, node->child[1], state);
+
+            //WARNING may need a stack
+            beginOfFor = emitSkip(0);
+
+            //Check if the range has been exceeded.
+            emitRM((char *)"LD", 4, tmpToff + 3, 1, (char *)"loop index");
+            emitRM((char *)"LD", 5, tmpToff + 2, 1, (char *)"stop value");
+            emitRM((char *)"LD", 3, tmpToff + 1, 1, (char *)"step value");
+
+            emitRO((char *)"SLT", 3, 4, 5, (char *)"Op <");
+
+            emitRM((char *)"JNZ", 3, 1, 7, (char *)"Jump to loop body");
+
+            ForFixup = emitSkip(1);
+
+            //Child[2] == compoundK
+            code_gen_traverse_single_node(symTab, node->child[2], state);
+
+            emitComment((char *)"Bottom of loop increment and jump");
+
+            emitRM((char *)"LD", 3, tmpToff + 3, 1, (char *)"Load index");
+            emitRM((char *)"LD", 5, tmpToff + 1, 1, (char *)"Load step");
+
+            emitRO((char *)"ADD", 3, 3, 5, (char *)"increment");
+
+            emitRM((char *)"ST", 3, tmpToff + 3, 1, (char *)"store back to index");
+            emitGotoAbs(beginOfFor, (char *)"go to beginning of loop");
+            backPatchAJumpToHere(ForFixup, (char *)"Jump past loop [backpatch]");
+
+            emitComment((char *)"END LOOP");
+
+            break;
+        }
+        case CompoundK:
+            emitComment((char *)"COMPOUND");
+
+            //set toffset to the open space of the compound;
+            //Size is the total memory alocated by local variables and not temporary
+
+            if (node->parent->subkind.stmt != ForK)
+                tOffset = node->size;
+
+            emitComment((char *)"TOFF set:", tOffset);
+
+            if (node->child[0] != NULL && node->child[0]->nodekind == DeclK && node->child[0]->subkind.decl == VarK)
+                suppressCompoundBody = true;
+            else
+                emitComment((char *)"Compound Body");
+
+            checkChildren(node, symTab, state);
+
+            emitComment((char *)"TOFF set:", tOffset);
+
+            emitComment((char *)"END COMPOUND");
+
+            suppressCompoundBody = false;
             break;
 
-            case ForK:
+        case ReturnK:
 
-                checkChildren(node, symTab, state);
-                break;
+            emitComment((char *)"RETURN");
+            checkChildren(node, symTab, state);
 
-            case CompoundK:
-                emitComment((char *)"COMPOUND");
-
-                //set toffset to the open space of the compound;
-                tOffset = node->size;
-
-                emitComment((char *)"TOFF set:", tOffset);
-
-                if (node->child[0] != NULL && node->child[0]->nodekind == DeclK && node->child[0]->subkind.decl == VarK)
-                    suppressCompoundBody = true;
-                else
-                    emitComment((char *)"Compound Body");
-
-                checkChildren(node, symTab, state);
-
-                emitComment((char *)"TOFF set:", tOffset);
-
-                emitComment((char *)"END COMPOUND");
-
-                suppressCompoundBody = false;
-                break;
-
-            case ReturnK:
-
-                emitComment((char *)"RETURN");
-                checkChildren(node, symTab, state);
-
-                //we have a return value
-                if (node->child[0] != NULL)
-                {
-                    emitRM((char *)"LDA", 2, 0, 3, (char *)"Copy result to return register");
-                }
-
-                emitRM((char *)"LD", 3, -1, 1, (char *)"Load return address");
-                emitRM((char *)"LD", 1, 0, 1, (char *)"Adjust fp");
-                emitGoto(0, 3, (char *)"Return");
-                break;
-
-            case BreakK:
-                emitComment((char *)"BREAK");
-
-                emitGotoAbs(locationStack.top(), (char *)"break");
-
-                break;
-
-            case RangeK:
-
-                checkChildren(node, symTab, state);
-                break;
-
-            default:
-
-                printf("PROGRAMMER ERROR UNKNOWN STA IN CODE GENTMENT TYPE\nSHOULD NOT GET HERE\n");
-                exit(-1);
-            }
-        }
-        //Process declarations
-        else if (node->nodekind == DeclK)
-        {
-            switch (node->subkind.decl)
+            //we have a return value
+            if (node->child[0] != NULL)
             {
-            case VarK:
-
-                checkChildren(node, symTab, state);
-                if (node->isArray && node->depth > 1)
-                {
-                    emitRM((char *)"LDC", 3, node->size - 1, 6, (char *)"load size of array", node->attr.name);
-                    emitRM((char *)"ST", 3, node->loc, 1, (char *)"save size of array", node->attr.name);
-                }
-
-                if (node->sibling == NULL && suppressCompoundBody)
-                {
-                    emitComment((char *)"Compound Body");
-                    emitComment((char *)"EXPRESSION");
-                }
-
-                break;
-
-            case FuncK:
-
-                //temp offset would be -2 to start. 0 and -1 are taken already
-                //by the return ticket and instruction to execute
-                tOffset = node->size;
-
-                if (strcmp("main", node->attr.string) == 0)
-                    mainOffset = emitWhereAmI();
-
-                line_sep();
-                emitComment((char *)"FUNCTION", node->attr.string);
-                emitComment((char *)"TOFF set:", tOffset);
-
-                emitRM((char *)"ST", 3, -1, 1, (char *)"Store return address");
-                checkChildren(node, symTab, state);
-
-                //add standard closing
-                emitComment((char *)"Add standard closing in case there is no return statement");
-                emitRM((char *)"LDC", 2, 0, 6, (char *)"Set return value to 0");
-                emitRM((char *)"LD", 3, -1, 1, (char *)"Load return address");
-                emitRM((char *)"LD", 1, 0, 1, (char *)"Adjust fp");
-                emitGoto(0, 3, (char *)"Return");
-                emitComment((char *)"END FUNCTION", node->attr.string);
-
-                //If we are the main function we add the standard closing.
-                if (strcmp("main", node->attr.string) == 0)
-                {
-                    backPatchAJumpToHere(0, (char *)"Jump to init [backpatch]");
-                }
-                else
-                    emitComment((char *)"");
-                break;
-
-            case ParamK:
-
-                checkChildren(node, symTab, state);
-                break;
-
-            default:
-                printf("PROGRAMMER ERROR UNKNOWN DEC IN CODE GENL TYPE\nSHOULD NOT GET HERE\n");
-                exit(-1);
+                emitRM((char *)"LDA", 2, 0, 3, (char *)"Copy result to return register");
             }
-        }
-        //Proccess Expressions
-        else if (node->nodekind == ExpK)
-        {
 
-            switch (node->subkind.exp)
+            emitRM((char *)"LD", 3, -1, 1, (char *)"Load return address");
+            emitRM((char *)"LD", 1, 0, 1, (char *)"Adjust fp");
+            emitGoto(0, 3, (char *)"Return");
+            break;
+
+        case BreakK:
+            emitComment((char *)"BREAK");
+
+            emitGotoAbs(locationStack.top(), (char *)"break");
+
+            break;
+
+        case RangeK:
+
+            //Process the begining part of the range
+            code_gen_traverse_single_node(symTab, node->child[0], state);
+            emitRM((char *)"ST", 3, tOffset + 3, 1, (char *)"save starting value in index variable");
+
+            code_gen_traverse_single_node(symTab, node->child[1], state);
+            emitRM((char *)"ST", 3, tOffset + 2, 1, (char *)"save stop value");
+
+            if (node->child[2] != NULL)
             {
-            case OpK:
+                code_gen_traverse_single_node(symTab, node->child[2], state);
+                emitRM((char *)"ST", 3, tOffset + 1, 1, (char *)"save step value");
+            }
+            else
+            {
+                emitRM((char *)"LDC", 3, 1, 6, (char *)"default increment by 1");
+                emitRM((char *)"ST", 3, tOffset + 1, 1, (char *)"save step value");
+            }
 
-                //we are an array on the left hand side
-                if (node->op == OPEN_BRACK && node->sideOfAssignment == leftSide)
-                {
+            break;
+
+        default:
+
+            printf("PROGRAMMER ERROR UNKNOWN STA IN CODE GENTMENT TYPE\nSHOULD NOT GET HERE\n");
+            exit(-1);
+        }
+    }
+    //Process declarations
+    else if (node->nodekind == DeclK)
+    {
+        switch (node->subkind.decl)
+        {
+        case VarK:
+
+            //we have an initilizer
+            if ((node->child[0] != NULL && node->depth > 1) && !node->isStatic)
+            {
+
+                checkChildren(node, symTab, state);
+                if (!node->isArray)
+                    emitRM((char *)"ST", 3, node->loc, 1, (char *)"Store variable", node->attr.name);
+            }
+
+            if ((node->isArray && node->depth > 1) && !node->isStatic)
+            {
+                if (node->child[0] == NULL)
                     checkChildren(node, symTab, state);
-                    emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push index");
-                    decrement_toffset(1);
-                }
-                else if (node->op == OPEN_BRACK && (node->parent->op == INC || node->parent->op == DEC))
-                {
-                    checkChildren(node, symTab, state);
-                }
-                //we are an array on the rhs
-                else if (node->op == OPEN_BRACK)
-                {
+                emitRM((char *)"LDC", 3, node->size - 1, 6, (char *)"load size of array", node->attr.name);
+                emitRM((char *)"ST", 3, node->loc, 1, (char *)"save size of array", node->attr.name);
+            }
 
-                    //Load the base address of the array into R3
-                    if (node->child[0]->scope == Local)
-                        emitRM((char *)"LDA", 3, (node->child[0]->loc) - 1, 1, (char *)"Load address of base of array", node->child[0]->attr.name);
-                    else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
-                        emitRM((char *)"LDA", 3, (node->child[0]->loc) - 1, 0, (char *)"Load address of base of array", node->child[0]->attr.name);
-                    else if (node->child[0]->scope == Parameter)
-                        emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load address of base of array", node->child[0]->attr.name);
+            if (node->child[0] != NULL && node->isArray)
+            {
+                emitStrLit(node->child[0]->loc - 1, node->child[0]->attr.string);
+                emitRM((char *)"LDA", 3, node->child[0]->loc - 1, 0, (char *)"Load address of char array");
+                emitRM((char *)"LDA", 4, node->loc - 1, 1, (char *)"address of lhs");
 
-                    //Push base address of array stored in r3 onto stack
+                emitRM((char *)"LD", 5, 1, 3, (char *)"size of rhs");
+                emitRM((char *)"LD", 6, 1, 4, (char *)"size of lhs");
+
+                emitRO((char *)"SWP", 5, 6, 6, (char *)"pick smallest size");
+
+                emitRO((char *)"MOV", 4, 3, 5, (char *)"array op =");
+            }
+
+            if (node->sibling == NULL && suppressCompoundBody)
+            {
+                emitComment((char *)"Compound Body");
+                emitComment((char *)"EXPRESSION");
+            }
+
+            break;
+
+        case FuncK:
+
+            //temp offset would be -2 to start. 0 and -1 are taken already
+            //by the return ticket and instruction to execute
+            tOffset = node->size;
+
+            if (strcmp("main", node->attr.string) == 0)
+                mainOffset = emitWhereAmI();
+
+            line_sep();
+            emitComment((char *)"FUNCTION", node->attr.string);
+            emitComment((char *)"TOFF set:", tOffset);
+
+            emitRM((char *)"ST", 3, -1, 1, (char *)"Store return address");
+            checkChildren(node, symTab, state);
+
+            //add standard closing
+            emitComment((char *)"Add standard closing in case there is no return statement");
+            emitRM((char *)"LDC", 2, 0, 6, (char *)"Set return value to 0");
+            emitRM((char *)"LD", 3, -1, 1, (char *)"Load return address");
+            emitRM((char *)"LD", 1, 0, 1, (char *)"Adjust fp");
+            emitGoto(0, 3, (char *)"Return");
+            emitComment((char *)"END FUNCTION", node->attr.string);
+
+            //If we are the main function we add the standard closing.
+            if (strcmp("main", node->attr.string) == 0)
+            {
+            }
+            else
+                emitComment((char *)"");
+            break;
+
+        case ParamK:
+
+            checkChildren(node, symTab, state);
+            break;
+
+        default:
+            printf("PROGRAMMER ERROR UNKNOWN DEC IN CODE GENL TYPE\nSHOULD NOT GET HERE\n");
+            exit(-1);
+        }
+    }
+    //Proccess Expressions
+    else if (node->nodekind == ExpK)
+    {
+
+        switch (node->subkind.exp)
+        {
+        case OpK:
+
+            //we are an array on the left hand side
+            if (node->op == OPEN_BRACK && node->sideOfAssignment == leftSide)
+            {
+                checkChildren(node, symTab, state);
+                emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push index");
+                decrement_toffset(1);
+            }
+            else if (node->op == OPEN_BRACK && (node->parent->op == INC || node->parent->op == DEC))
+            {
+                checkChildren(node, symTab, state);
+            }
+            //we are an array on the rhs
+            else if (node->op == OPEN_BRACK)
+            {
+
+                //Load the base address of the array into R3
+                if (node->child[0]->scope == Local)
+                    emitRM((char *)"LDA", 3, (node->child[0]->loc) - 1, 1, (char *)"Load address of base of array", node->child[0]->attr.name);
+                else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
+                    emitRM((char *)"LDA", 3, (node->child[0]->loc) - 1, 0, (char *)"Load address of base of array", node->child[0]->attr.name);
+                else if (node->child[0]->scope == Parameter)
+                    emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load address of base of array", node->child[0]->attr.name);
+
+                //Push base address of array stored in r3 onto stack
+                emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
+                decrement_toffset(1);
+
+                //process children, Determine index, result will be left in r3
+                checkChildren(node, symTab, state);
+
+                //Pop base address of array into R4 from stack
+                increment_toffset(1);
+                emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
+
+                //Determine address of array element. (baseAddress - index)
+                emitRO((char *)"SUB", 3, 4, 3, (char *)"compute location from index");
+
+                //Load the value of the element into R3
+                emitRM((char *)"LD", 3, 0, 3, (char *)"Load array element");
+            }
+            else if (node->op == SIZEOF)
+            {
+
+                code_gen_traverse(symTab, node->child[0], state);
+                emitRM((char *)"LD", 3, 1, 3, "Load array size");
+            }
+            //Assume binary and unary operators are left
+            else
+            {
+                if (node->child[0] == NULL)
+                {
+                    printf("ERROR CODE GEN OPK, EXPECTING LHS IN BINARY OPERATOR, RECIEVED NULL...\nNOW QUITTING\n");
+                    exit(-1);
+                }
+
+                //process lhs leave result in R3
+                code_gen_traverse(symTab, node->child[0], state);
+
+                //If there is a child on the RHS we have a binary operator
+                //Push LHS that is in R3 on the stack and place the RHS in r4
+                if (node->child[1] != NULL)
+                {
+                    //Push Value LHS value in R3 on stack
                     emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
                     decrement_toffset(1);
 
-                    //process children, Determine index, result will be left in r3
-                    checkChildren(node, symTab, state);
+                    //Process RHS leave result in R3
+                    code_gen_traverse(symTab, node->child[1], state);
 
-                    //Pop base address of array into R4 from stack
+                    //Pop LHS into R4 from stack
                     increment_toffset(1);
                     emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
-
-                    //Determine address of array element. (baseAddress - index)
-                    emitRO((char *)"SUB", 3, 4, 3, (char *)"compute location from index");
-
-                    //Load the value of the element into R3
-                    emitRM((char *)"LD", 3, 0, 3, (char *)"Load array element");
                 }
 
-                //Assume binary and unary operators are left
-                else
-                {
-                    if (node->child[0] == NULL)
-                    {
-                        printf("ERROR CODE GEN OPK, EXPECTING LHS IN BINARY OPERATOR, RECIEVED NULL...\nNOW QUITTING\n");
-                        exit(-1);
-                    }
+                //Performs the operator instruction. For binary it expects r3 and r4. Unary only expects r3. Result is left in r3
+                emitOperator(node);
+            }
 
-                    //process lhs leave result in R3
-                    code_gen_traverse(symTab, node->child[0], state);
-
-                    //If there is a child on the RHS we have a binary operator
-                    //Push LHS that is in R3 on the stack and place the RHS in r4
-                    if (node->child[1] != NULL)
-                    {
-                        //Push Value LHS value in R3 on stack
-                        emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push left side");
-                        decrement_toffset(1);
-
-                        //Process RHS leave result in R3
-                        code_gen_traverse(symTab, node->child[1], state);
-
-                        //Pop LHS into R4 from stack
-                        increment_toffset(1);
-                        emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop left into ac1");
-                    }
-
-                    //Performs the operator instruction. For binary it expects r3 and r4. Unary only expects r3. Result is left in r3
-                    emitOperator(node);
-                }
-
-                /*
+            /*
                 if (node->op == QUESTION || node->op == CHSIGN)
                 {
                     isUnary = true;
@@ -879,29 +993,32 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 }
                 */
 
-                break;
+            break;
 
-            case ConstantK:
+        case ConstantK:
 
-                //Constants shouldn't have any children
-                //checkChildren(node, symTab, Normal);
+            //Constants shouldn't have any children
+            //checkChildren(node, symTab, Normal);
 
-                //Lone integer constants
+            //Lone integer constants
+            if (node->parent->subkind.decl == VarK && node->isArray)
+            {
+                //no Op
+            }
+            else if (node->expType == Integer)
+            {
+                emitRM((char *)"LDC", 3, node->attr.value, DUMMY_REG_6, (char *)"Load integer constant");
+            }
+            else if (node->expType == Boolean)
+            {
+                emitRM((char *)"LDC", 3, node->attr.value, DUMMY_REG_6, (char *)"Load Boolean constant");
+            }
+            else if (node->expType == Char)
+            {
+                emitRM((char *)"LDC", 3, node->attr.value, DUMMY_REG_6, (char *)"Load char constant");
+            }
 
-                if (node->expType == Integer)
-                {
-                    emitRM((char *)"LDC", 3, node->attr.value, DUMMY_REG_6, (char *)"Load integer constant");
-                }
-                else if (node->expType == Boolean)
-                {
-                    emitRM((char *)"LDC", 3, node->attr.value, DUMMY_REG_6, (char *)"Load Boolean constant");
-                }
-                else if (node->expType == Char)
-                {
-                    emitRM((char *)"LDC", 3, node->attr.value, DUMMY_REG_6, (char *)"Load char constant");
-                }
-
-                /*
+            /*
                 //our parent is an OP
                 else if (state == OpInCall)
                 {
@@ -985,52 +1102,52 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 {
                 }
                 */
+            break;
+
+        case IdK:
+
+            //Case that we are a identifier for an array
+            //We let our parent Gen code since we need the index
+            if (node->parent->isOp && node->parent->op == OPEN_BRACK)
+            {
+                //return the value in R3 if we are the index
+                if (node->parent->child[1] == node)
+                {
+                    if (node->scope == Local)
+                        emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
+                    else if (node->scope == Global || node->scope == LocalStatic)
+                        emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
+                    else if (node->scope == Parameter)
+                        emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
+                }
+
                 break;
+            }
 
-            case IdK:
-
-                //Case that we are a identifier for an array
-                //We let our parent Gen code since we need the index
-                if (node->parent->isOp && node->parent->op == OPEN_BRACK)
+            if (node->sideOfAssignment != leftSide)
+            {
+                //assume identifier is not an array
+                if (!node->isArray)
                 {
-                    //return the value in R3 if we are the index
-                    if (node->parent->child[1] == node)
-                    {
-                        if (node->scope == Local)
-                            emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
-                        else if (node->scope == Global || node->scope == LocalStatic)
-                            emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
-                        else if (node->scope == Parameter)
-                            emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
-                    }
-
-                    break;
+                    if (node->scope == Local)
+                        emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
+                    else if (node->scope == Global || node->scope == LocalStatic)
+                        emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
+                    else if (node->scope == Parameter)
+                        emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
                 }
-
-                if (node->sideOfAssignment != leftSide)
+                else
                 {
-                    //assume identifier is not an array
-                    if (!node->isArray)
-                    {
-                        if (node->scope == Local)
-                            emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
-                        else if (node->scope == Global || node->scope == LocalStatic)
-                            emitRM((char *)"LD", 3, node->loc, 0, (char *)"Load variable", node->attr.string);
-                        else if (node->scope == Parameter)
-                            emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load variable", node->attr.string);
-                    }
-                    else
-                    {
-                        if (node->scope == Local)
-                            emitRM((char *)"LDA", 3, (node->loc - 1), 1, (char *)"Load address of base of array", node->attr.string);
-                        else if (node->scope == Global || node->scope == LocalStatic)
-                            emitRM((char *)"LDA", 3, (node->loc - 1), 0, (char *)"Load address of base of array", node->attr.string);
-                        else if (node->scope == Parameter)
-                            emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load address of base of array", node->attr.string);
-                    }
+                    if (node->scope == Local)
+                        emitRM((char *)"LDA", 3, (node->loc - 1), 1, (char *)"Load address of base of array", node->attr.string);
+                    else if (node->scope == Global || node->scope == LocalStatic)
+                        emitRM((char *)"LDA", 3, (node->loc - 1), 0, (char *)"Load address of base of array", node->attr.string);
+                    else if (node->scope == Parameter)
+                        emitRM((char *)"LD", 3, node->loc, 1, (char *)"Load address of base of array", node->attr.string);
                 }
+            }
 
-                /*
+            /*
                 if (node->sideOfAssignment == leftSide)
                 {
                     //assume identifier is not an array
@@ -1042,10 +1159,10 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                         emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
                 }
     */
-                //IdK's dont have children
-                //checkChildren(node, symTab, Normal);
+            //IdK's dont have children
+            //checkChildren(node, symTab, Normal);
 
-                /*
+            /*
                 //Think this is fine. Assuming IdK is only called from callK
                 //We check what reg to place things in and push and pop accordingly
                 if (state == OpInCall)
@@ -1108,126 +1225,139 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 }
                 */
 
-                break;
+            break;
 
-            case AssignK:
+        case AssignK:
 
-                //emitComment((char *)"EXPRESSION");
+            //emitComment((char *)"EXPRESSION");
 
-                checkChildren(node, symTab, state);
+            checkChildren(node, symTab, state);
 
-                if (node->op == ADDASS || node->op == SUBASS || node->op == DIVASS || node->op == MULASS || node->op == ASS)
+            if (node->op == ADDASS || node->op == SUBASS || node->op == DIVASS || node->op == MULASS || node->op == ASS)
+            {
+
+                //Assume Array
+                if (node->child[0]->isOp && node->child[0]->op == OPEN_BRACK)
+                {
+                    //Place the index into R4 from the stack.
+                    increment_toffset(1);
+                    emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop index");
+
+                    //Load the base of the array into R5
+                    if (node->child[0]->scope == Local)
+                        emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                    else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
+                        emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 0, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                    else if (node->child[0]->scope == Parameter)
+                        emitRM((char *)"LD", 5, (node->child[0]->loc), 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+
+                    //bump base in R5 by index in R4
+                    emitRO((char *)"SUB", 5, 5, 4, (char *)"Compute offset of value");
+
+                    if (node->op != ASS)
+                    {
+                        //Load the value of the element into R4
+                        emitRM((char *)"LD", 4, 0, 5, (char *)"load lhs variable of", node->child[0]->arrayIdentf);
+
+                        //emit the operator and perform the instruction  R3 = R4 op R3
+                        emitOperator(node);
+                    }
+
+                    //Store the result back at the location in R5
+                    emitRM((char *)"ST", 3, 0, 5, (char *)"Store variable", node->child[0]->arrayIdentf);
+                }
+                //Assumes non array
+                else
                 {
 
-                    //Assume Array
-                    if (node->child[0]->isOp && node->child[0]->op == OPEN_BRACK)
+                    if (node->op != ASS)
                     {
-                        //Place the index into R4 from the stack.
-                        increment_toffset(1);
-                        emitRM((char *)"LD", 4, tOffset, 1, (char *)"Pop index");
-
-                        //Load the base of the array into R5
+                        //Load into R4 the value of the LHS of variable
                         if (node->child[0]->scope == Local)
-                            emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                            emitRM((char *)"LD", 4, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
                         else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
-                            emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 0, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                            emitRM((char *)"LD", 4, (node->child[0]->loc), 0, (char *)"Load lhs variable", node->child[0]->attr.name);
                         else if (node->child[0]->scope == Parameter)
-                            emitRM((char *)"LD", 5, (node->child[0]->loc), 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                            emitRM((char *)"LD", 4, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
 
-                        //bump base in R5 by index in R4
-                        emitRO((char *)"SUB", 5, 5, 4, (char *)"Compute offset of value");
-
-                        if (node->op != ASS)
-                        {
-                            //Load the value of the element into R4
-                            emitRM((char *)"LD", 4, 0, 5, (char *)"load lhs variable of", node->child[0]->arrayIdentf);
-
-                            //emit the operator and perform the instruction  R3 = R4 op R3
-                            emitOperator(node);
-                        }
-
-                        //Store the result back at the location in R5
-                        emitRM((char *)"ST", 3, 0, 5, (char *)"Store variable", node->child[0]->arrayIdentf);
+                        //emit the operator and perform the instruction  R3 = R4 op R3
+                        emitOperator(node);
                     }
-                    //Assumes non array
+                    //array assignment by name a[] b[]  a = b;
+                    else if (node->op == ASS && node->child[0]->isArray && node->child[1]->isArray)
+                    {
+                        emitRM((char *)"LDA", 4, (node->child[0]->loc - 1), 1, (char *)"address of lhs");
+                        emitRM((char *)"LD", 5, 1, 3, (char *)"size of rhs");
+                        emitRM((char *)"LD", 6, 1, 4, (char *)"size of lhs");
+
+                        emitRO((char *)"SWP", 5, 6, 6, (char *)"pick smallest size");
+
+                        emitRO((char *)"MOV", 4, 3, 5, (char *)"array op =");
+                    }
+
+                    if(!(node->op == ASS && node->child[0]->isArray && node->child[1]->isArray))
+                    if (node->child[0]->scope == Local)
+                        emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
+                    else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
+                        emitRM((char *)"ST", 3, (node->child[0]->loc), 0, (char *)"Store variable", node->child[0]->attr.name);
+                    else if (node->child[0]->scope == Parameter)
+                        emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
+                }
+            }
+            else if (node->op == INC || node->op == DEC)
+            {
+                //If we have an array calculate the address of the element to be incremented or decremented.
+                if (node->child[0]->isOp && node->child[0]->op == OPEN_BRACK)
+                {
+                    //ASSUME R3 CONTAINS THE INDEX
+                    //Load the base of the array into R5
+                    if (node->child[0]->scope == Local)
+                        emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                    else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
+                        emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 0, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+                    else if (node->child[0]->scope == Parameter)
+                        emitRM((char *)"LD", 5, (node->child[0]->loc), 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
+
+                    //bump base in R5 by index
+                    emitRO((char *)"SUB", 5, 5, 3, (char *)"Compute offset of value");
+
+                    //Load the value of the element into R3
+                    emitRM((char *)"LD", 3, 0, 5, (char *)"load lhs variable", node->child[0]->arrayIdentf);
+
+                    //INC/DEC the element at the computed memory location in R5.
+                    if (node->op == INC)
+                        emitRM((char *)"LDA", 3, 1, 3, (char *)"increment value of", node->child[0]->arrayIdentf);
                     else
-                    {
-                        if (node->op != ASS)
-                        {
-                            //Load into R4 the value of the LHS of variable
-                            if (node->child[0]->scope == Local)
-                                emitRM((char *)"LD", 4, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
-                            else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
-                                emitRM((char *)"LD", 4, (node->child[0]->loc), 0, (char *)"Load lhs variable", node->child[0]->attr.name);
-                            else if (node->child[0]->scope == Parameter)
-                                emitRM((char *)"LD", 4, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
+                        emitRM((char *)"LDA", 3, -1, 3, (char *)"decrement value of", node->child[0]->arrayIdentf);
 
-                            //emit the operator and perform the instruction  R3 = R4 op R3
-                            emitOperator(node);
-                        }
-
-                        if (node->child[0]->scope == Local)
-                            emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
-                        else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
-                            emitRM((char *)"ST", 3, (node->child[0]->loc), 0, (char *)"Store variable", node->child[0]->attr.name);
-                        else if (node->child[0]->scope == Parameter)
-                            emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
-                    }
+                    //Store the result back at the location in R5
+                    emitRM((char *)"ST", 3, 0, 5, (char *)"Store variable", node->child[0]->arrayIdentf);
                 }
-                else if (node->op == INC || node->op == DEC)
+                else if (node->child[0]->subkind.exp == IdK)
                 {
-                    //If we have an array calculate the address of the element to be incremented or decremented.
-                    if (node->child[0]->isOp && node->child[0]->op == OPEN_BRACK)
-                    {
-                        //ASSUME R3 CONTAINS THE INDEX
-                        //Load the base of the array into R5
-                        if (node->child[0]->scope == Local)
-                            emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
-                        else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
-                            emitRM((char *)"LDA", 5, (node->child[0]->loc) - 1, 0, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
-                        else if (node->child[0]->scope == Parameter)
-                            emitRM((char *)"LD", 5, (node->child[0]->loc), 1, (char *)"Load address of base of array", node->child[0]->arrayIdentf);
 
-                        //bump base in R5 by index
-                        emitRO((char *)"SUB", 5, 5, 3, (char *)"Compute offset of value");
+                    if (node->child[0]->scope == Local)
+                        emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
+                    else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
+                        emitRM((char *)"LD", 3, (node->child[0]->loc), 0, (char *)"Load lhs variable", node->child[0]->attr.name);
+                    else if (node->child[0]->scope == Parameter)
+                        emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
 
-                        //Load the value of the element into R3
-                        emitRM((char *)"LD", 3, 0, 5, (char *)"load lhs variable", node->child[0]->arrayIdentf);
+                    if (node->op == INC)
+                        emitRM((char *)"LDA", 3, 1, 3, (char *)"increment value of", node->child[0]->attr.name);
+                    else
+                        emitRM((char *)"LDA", 3, -1, 3, (char *)"decrement value of", node->child[0]->attr.name);
 
-                        //INC/DEC the element at the computed memory location in R5.
-                        if (node->op == INC)
-                            emitRM((char *)"LDA", 3, 1, 3, (char *)"increment value of", node->child[0]->arrayIdentf);
-                        else
-                            emitRM((char *)"LDA", 3, -1, 3, (char *)"decrement value of", node->child[0]->arrayIdentf);
-
-                        //Store the result back at the location in R5
-                        emitRM((char *)"ST", 3, 0, 5, (char *)"Store variable", node->child[0]->arrayIdentf);
-                    }
-                    else if (node->child[0]->subkind.exp == IdK)
-                    {
-
-                        if (node->child[0]->scope == Local)
-                            emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
-                        else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
-                            emitRM((char *)"LD", 3, (node->child[0]->loc), 0, (char *)"Load lhs variable", node->child[0]->attr.name);
-                        else if (node->child[0]->scope == Parameter)
-                            emitRM((char *)"LD", 3, (node->child[0]->loc), 1, (char *)"Load lhs variable", node->child[0]->attr.name);
-
-                        if (node->op == INC)
-                            emitRM((char *)"LDA", 3, 1, 3, (char *)"increment value of", node->child[0]->attr.name);
-                        else
-                            emitRM((char *)"LDA", 3, -1, 3, (char *)"decrement value of", node->child[0]->attr.name);
-
-                        if (node->child[0]->scope == Local)
-                            emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
-                        else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
-                            emitRM((char *)"ST", 3, (node->child[0]->loc), 0, (char *)"Store variable", node->child[0]->attr.name);
-                        else if (node->child[0]->scope == Parameter)
-                            emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
-                    }
+                    if (node->child[0]->scope == Local)
+                        emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
+                    else if (node->child[0]->scope == Global || node->child[0]->scope == LocalStatic)
+                        emitRM((char *)"ST", 3, (node->child[0]->loc), 0, (char *)"Store variable", node->child[0]->attr.name);
+                    else if (node->child[0]->scope == Parameter)
+                        emitRM((char *)"ST", 3, (node->child[0]->loc), 1, (char *)"Store variable", node->child[0]->attr.name);
                 }
+            }
 
-                /*
+            /*
                 //if we are an assignment with an array on either side.
                 //have not implemented complex expressions a[2] = x+2+3
                 
@@ -1359,37 +1489,37 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 suppressPrint = false;
                 */
 
-                break;
+            break;
 
-            case InitK:
+        case InitK:
 
-                checkChildren(node, symTab, state);
+            checkChildren(node, symTab, state);
 
-                break;
+            break;
 
-            case CallK:
-                emitComment((char *)"EXPRESSION");
-                emitComment((char *)"CALL", node->attr.name);
+        case CallK:
+            emitComment((char *)"EXPRESSION");
+            emitComment((char *)"CALL", node->attr.name);
 
-                //Set up up registers for ghost frame
-                ghostFrameToff = tOffset;
-                emitRM((char *)"ST", 1, tOffset, 1, (char *)"Store fp in ghost frame for", node->attr.name);
-                //Decrement by 2 for the execution and return ticket
-                decrement_toffset(2);
+            //Set up up registers for ghost frame
+            ghostFrameToff = tOffset;
+            emitRM((char *)"ST", 1, tOffset, 1, (char *)"Store fp in ghost frame for", node->attr.name);
+            //Decrement by 2 for the execution and return ticket
+            decrement_toffset(2);
 
-                //save our location in tree
-                tmpNode = node;
+            //save our location in tree
+            tmpNode = node;
 
-                //Itterate over the parameters
-                node = node->child[0];
+            //Itterate over the parameters
+            node = node->child[0];
 
-                for (int i = 1; node != NULL; i++)
-                {
-                    emitComment((char *)"Param", i);
+            for (int i = 1; node != NULL; i++)
+            {
+                emitComment((char *)"Param", i);
 
-                    code_gen_traverse(symTab, node, state);
+                code_gen_traverse_single_node(symTab, node, state);
 
-                    /*
+                /*
                     //for normal constants without IdK
                     if (!node->child[0]->isOp && !node->child[0]->isArray && !(node->child[0]->nodekind == ExpK && node->child[0]->subkind.exp == AssignK))
                     {
@@ -1432,58 +1562,55 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                     }
                     */
 
-                    //Push parameter into reg
-                    emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push parameter");
-                    //Decrement for each parameter.
-                    decrement_toffset(1);
+                //Push parameter into reg
+                emitRM((char *)"ST", 3, tOffset, 1, (char *)"Push parameter");
+                //Decrement for each parameter.
+                decrement_toffset(1);
 
-                    node = node->sibling;
-                }
-                //restore our position in the tree to that of
-                node = tmpNode;
-                emitComment((char *)"Param end", node->attr.name);
-
-                lookupNode = sym_lookup(node->attr.name, (char *)"CallK", symTab);
-
-                emitRM((char *)"LDA", 1, ghostFrameToff, 1, (char *)"Ghost frame becomes new active frame");
-                emitRM((char *)"LDA", 3, 1, 7, (char *)"Return address in ac");
-                if (lookupNode->isIo)
-                    emitGotoAbs(lookupNode->loc, (char *)"CALL", node->attr.name);
-                //39 is magic, because it is the number in the global space after the IO library is loaded.
-                //all other functions sit after.
-                else
-                    emitGotoAbs(lookupNode->loc + 39, (char *)"CALL", node->attr.name);
-
-                emitRM((char *)"LDA", 3, 0, 2, (char *)"Save the result in ac");
-
-                emitComment((char *)"Call end", node->attr.name);
-
-                //Set the tOffset to -2
-                tOffset = ghostFrameToff;
-                emitComment((char *)"TOFF set:", tOffset);
-
-
-
-                break;
-
-            default:
-                printf("PROGRAMMER ERROR UNKNOWN EXP IN CODE GEN\nSHOULD NOT GET HERE\n");
-                exit(-1);
+                node = node->sibling;
             }
-        }
+            //restore our position in the tree to that of
+            node = tmpNode;
+            emitComment((char *)"Param end", node->attr.name);
 
-        else
-        {
-            printf("PROGRAMMER ERROR UNKNOWN NODE IN CODE GEN KIND\nSHOULD NOT GET HERE\n");
+            lookupNode = sym_lookup(node->attr.name, (char *)"CallK", symTab);
+
+            emitRM((char *)"LDA", 1, ghostFrameToff, 1, (char *)"Ghost frame becomes new active frame");
+            emitRM((char *)"LDA", 3, 1, 7, (char *)"Return address in ac");
+            if (lookupNode->isIo)
+                emitGotoAbs(lookupNode->loc, (char *)"CALL", node->attr.name);
+            //39 is magic, because it is the number in the global space after the IO library is loaded.
+            //all other functions sit after.
+            else
+                emitGotoAbs(lookupNode->loc + 39, (char *)"CALL", node->attr.name);
+
+            emitRM((char *)"LDA", 3, 0, 2, (char *)"Save the result in ac");
+
+            emitComment((char *)"Call end", node->attr.name);
+
+            //Set the tOffset to -2
+            tOffset = ghostFrameToff;
+            emitComment((char *)"TOFF set:", tOffset);
+
+            break;
+
+        default:
+            printf("PROGRAMMER ERROR UNKNOWN EXP IN CODE GEN\nSHOULD NOT GET HERE\n");
             exit(-1);
         }
+    }
 
-        node = node->sibling;
+    else
+    {
+        printf("PROGRAMMER ERROR UNKNOWN NODE IN CODE GEN KIND\nSHOULD NOT GET HERE\n");
+        exit(-1);
     }
 }
 
 void init_and_globals(SymbolTable *symTab)
 {
+    backPatchAJumpToHere(0, (char *)"Jump to init [backpatch]");
+
     emitComment((char *)"INIT");
 
     emitRM((char *)"LDA", 1, globalOffset, 0, (char *)"set first frame at end of globals");
@@ -1507,6 +1634,9 @@ void gen_code(SymbolTable *symTab, TreeNode *tree)
     //Leave space for backpatch
     TraverseState state;
     state.suppressSiblings = false;
+
+    globalSymTab = symTab;
+
     emitSkip(1);
     init_IO(symTab);
     code_gen_traverse(symTab, tree, state);
