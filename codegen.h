@@ -1,7 +1,6 @@
 #ifndef _codegen_
 #define _codegen_
-
-typedef enum TraverseState
+typedef enum TraverseStateFlags
 {
     Normal,
     OpInCall,
@@ -10,6 +9,13 @@ typedef enum TraverseState
     SimpleArrayAssignment,
     SimpleArrayIncDec,
     StandardAssignment,
+}TraverseStateFlags;
+
+
+typedef struct TraverseState
+{
+    int endOfLoopAddress;
+    TraverseStateFlags flags;
 }TraverseState;
 
 

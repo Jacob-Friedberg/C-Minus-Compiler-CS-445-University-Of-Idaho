@@ -489,7 +489,8 @@ void nested_array_from_call(treeNode *node)
     //GLOBAL COUNTER IS KEPT SO WE DONT NEED TO.
     pop_left_array(true);
 }
-
+//End of loop address is a special variable that contains the location for break statements
+//NOTE: we put it on the stack because we need to scope the return to the loop you are in.
 void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 {
     int ghostFrameToff = 0;
@@ -524,22 +525,83 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
             {
             case NullK:
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
                 break;
 
             case IfK:
+            {
+                //Fixup 1 handles getting over the TRUE code.
+                //Fixup 2 handles getting over the FALSE code When finishing the true code.
+                int rememberFixup1, rememberFixup2;
 
-                checkChildren(node, symTab, Normal);
-                break;
+                //Handle if then
+                if (node->child[2] == NULL)
+                {
+                    //Traverse the expression
+                    emitComment((char *)"IF");
+                    code_gen_traverse(symTab, node->child[0], state);
+                    rememberFixup1 = emitSkip(1);
+                    emitComment((char *)"THEN");
+                    code_gen_traverse(symTab, node->child[1], state);
+
+                    backPatchAJumpToHere("JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
+
+                    emitComment((char *)"END IF");
+                }
+                //handle if then else
+                else
+                {
+                    //Traverse the expression
+                    emitComment((char *)"IF");
+                    code_gen_traverse(symTab, node->child[0], state);
+                    rememberFixup1 = emitSkip(1);
+                    emitComment((char *)"THEN");
+                    code_gen_traverse(symTab, node->child[1], state);
+                    rememberFixup2 = emitSkip(1);
+
+                    backPatchAJumpToHere("JZR", 3, rememberFixup1, (char *)"Jump around the THEN if false [backpatch]");
+
+                    //Traverse else clause
+                    emitComment((char *)"ELSE");
+                    code_gen_traverse(symTab, node->child[2], state);
+
+                    backPatchAJumpToHere(rememberFixup2, "Jump around the ELSE [backpatch]");
+
+                    emitComment((char *)"END IF");
+                }
+            }
+
+            break;
 
             case WhileK:
+            {
+                //remember were the top of our loop is for repeating
+                int rememberTopOfLoop = emitSkip(0);
+                //traverse the expression
+                emitComment((char *)"WHILE");
+                code_gen_traverse(symTab, node->child[0], state);
 
-                checkChildren(node, symTab, Normal);
-                break;
+                //make room to jump to begining of the DO
+                int rememberFixupBeginingOfDo = emitSkip(1);
+                //make room to jump to end of loop when finished
+                int rememberFixupEndofLoopTest = emitSkip(1);
+                state.endOfLoopAddress = rememberFixupEndofLoopTest;
+                
+                backPatchAJumpToHere("JNZ",3,rememberFixupBeginingOfDo,(char*)"Jump to while part");
+
+                emitComment((char *)"DO");
+                code_gen_traverse(symTab, node->child[1], state);
+                emitGotoAbs(rememberTopOfLoop, (char *)"go to beginning of loop");
+
+                backPatchAJumpToHere(rememberFixupEndofLoopTest, (char *)"Jump past loop [backpatch]");
+
+                emitComment((char*) "END WHILE");
+            }
+            break;
 
             case ForK:
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
                 break;
 
             case CompoundK:
@@ -555,9 +617,8 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 else
                     emitComment((char *)"Compound Body");
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
 
-                tOffset = -2;
                 emitComment((char *)"TOFF set:", tOffset);
 
                 emitComment((char *)"END COMPOUND");
@@ -567,7 +628,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 
             case ReturnK:
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
 
                 emitComment((char *)"RETURN");
                 emitRM((char *)"LD", 3, -1, 1, (char *)"Load return address");
@@ -576,12 +637,15 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 break;
 
             case BreakK:
-                checkChildren(node, symTab, Normal);
+                emitComment((char *)"BREAK");
+
+                emitGotoAbs(state.endOfLoopAddress,(char*)"break");
+
                 break;
 
             case RangeK:
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
                 break;
 
             default:
@@ -597,7 +661,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
             {
             case VarK:
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
                 if (node->isArray && node->depth > 1)
                 {
                     emitRM((char *)"LDC", 3, node->size - 1, 6, (char *)"load size of array", node->attr.name);
@@ -626,7 +690,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 emitComment((char *)"TOFF set:", tOffset);
 
                 emitRM((char *)"ST", 3, -1, 1, (char *)"Store return address");
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
 
                 //add standard closing
                 emitComment((char *)"Add standard closing in case there is no return statement");
@@ -647,7 +711,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 
             case ParamK:
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
                 break;
 
             default:
@@ -1048,7 +1112,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 
                 //emitComment((char *)"EXPRESSION");
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
 
                 if (node->op == ADDASS || node->op == SUBASS || node->op == DIVASS || node->op == MULASS || node->op == ASS)
                 {
@@ -1297,7 +1361,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
 
             case InitK:
 
-                checkChildren(node, symTab, Normal);
+                checkChildren(node, symTab, state);
 
                 break;
 
@@ -1321,7 +1385,7 @@ void code_gen_traverse(SymbolTable *symTab, TreeNode *node, TraverseState state)
                 {
                     emitComment((char *)"Param", i);
 
-                    code_gen_traverse(symTab, node, Normal);
+                    code_gen_traverse(symTab, node, state);
 
                     /*
                     //for normal constants without IdK
@@ -1443,8 +1507,12 @@ void init_and_globals(SymbolTable *symTab)
 void gen_code(SymbolTable *symTab, TreeNode *tree)
 {
     //Leave space for backpatch
+    TraverseState state;
+    state.endOfLoopAddress = 0;
+    state.flags = Normal;
+
     emitSkip(1);
     init_IO(symTab);
-    code_gen_traverse(symTab, tree, Normal);
+    code_gen_traverse(symTab, tree, state);
     init_and_globals(symTab);
 }
