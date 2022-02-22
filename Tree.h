@@ -11,6 +11,14 @@ typedef int OpKind;
 
 // Kinds of Statements
 //typedef enum {DeclK, StmtK, ExpK} NodeKind;
+
+enum WhatSide
+{
+    leftSide,
+    rightSide,
+    unknownSide,
+};
+
 enum UnionType
 {
     cvalue,
@@ -70,7 +78,7 @@ typedef enum
 }ExpType;
 
 // What kind of scoping is used?  (decided during typing)
-enum VarKind
+enum ScopeKind
 {
     None,
     Local,
@@ -109,11 +117,19 @@ typedef struct treeNode
         char *name;           // used when IdK
     } attr;
     UnionType unionType;
+    WhatSide sideOfAssignment;
     //Depth of the stack of scopes when it is entered into the symbol table 
     bool isRangeKBy;
     bool isRangeK;
     int depth;
     bool isFunc;
+    bool isParam;
+    int numParams;
+    bool undeclared;
+    bool isIo;
+    ScopeKind scope;
+    int loc; // memory location
+    char *tokenStr;
     bool isInitErrorThrown;
     OpKind op;
     bool isOp;
@@ -121,10 +137,14 @@ typedef struct treeNode
     bool attrSet;
     ExpType expType; // used when ExpK for type checking
     bool isArray;    // is this an array
-    int arraySize;
+    int size;
     bool isStatic;   // is staticly allocated?
     bool isUsed;
+    bool lhsAssign;
+    bool rhsAssign;
     bool isInit;
+    bool isConst;
+    char *arrayIdentf;
 
     // even more semantic stuff will go here in later assignments.
 } TreeNode;
@@ -149,10 +169,11 @@ TreeNode *newExpNode(ExpKind kind,
                      TreeNode *c2 = NULL);
 
 void printTree(TreeNode *node,int indentLevel);
-void printTypedTree(TreeNode *node,int indentLevel);
+void printTypedTree(TreeNode *node, int indentLevel, bool memPrintFlag);
 void dumpNode(TreeNode *node);
 TreeNode *addSibling(TreeNode *t, TreeNode *s);
 void setType(TreeNode *t, ExpType type, bool isStatic);
 void convertExpTypeToString(ExpType type, char *string);
+void convertScopeKindToString(ScopeKind scope, char *string);
 void printSpaces(int indentLevel);
 #endif

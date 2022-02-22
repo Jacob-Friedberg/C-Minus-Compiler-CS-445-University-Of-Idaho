@@ -1,14 +1,17 @@
-// C-S21
-// globals
-int a[11];
-int x:666;
-
 main()
 {
-   int b[22];
-   int y:777;
-   static int c[33];
-   static int z:888;
+   char a[5]:"acid";
+   char b[5];
 
-   z=999;
-}
+   outputc(a[0]);
+   outputc(a[1]);
+   outputc(a[2]);
+   outputc(a[3]);
+   outnl();
+   b = a;
+   outputc(b[0]);
+   outputc(b[1]);
+   outputc(b[2]);
+   outputc(b[3]);
+   outnl();
+}   

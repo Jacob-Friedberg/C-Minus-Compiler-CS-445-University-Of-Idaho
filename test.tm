@@ -1,7 +1,6 @@
-* C- compiler version C-S21
-* Built: Apr 18, 2021 (toffset telemetry)
-* Author: Robert B. Heckendorn
-* File compiled:  v00.c-
+* C- Compiler Spring 2021
+* Author: Jacob Friedberg
+* File Compiled:  test.c-
 * 
 * ** ** ** ** ** ** ** ** ** ** ** **
 * FUNCTION input
@@ -87,6 +86,7 @@
  48:    LDC  3,5(6)	load size of array b
  49:     ST  3,-8(1)	save size of array b
 * Compound Body
+* EXPRESSION
 * EXPRESSION
 * CALL outputc
  50:     ST  1,-14(1)	Store fp in ghost frame for outputc
@@ -191,7 +191,6 @@
 102:    LDA  3,0(2)	Save the result in ac 
 * Call end outnl
 * TOFF set: -14
-* EXPRESSION
 103:    LDA  3,-3(1)	Load address of base of array a
 104:    LDA  4,-9(1)	address of lhs 
 105:     LD  5,1(3)	size of rhs 
@@ -302,7 +301,7 @@
 161:    LDA  3,0(2)	Save the result in ac 
 * Call end outnl
 * TOFF set: -14
-* TOFF set: -2
+* TOFF set: -14
 * END COMPOUND
 * Add standard closing in case there is no return statement
 162:    LDC  2,0(6)	Set return value to 0 

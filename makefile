@@ -1,16 +1,16 @@
 # MakeFile for CS445 Compilers
 # Jacob Friedberg
 # Version 1.0
-SRCS = scanner.l parser.y ourgetopt.cpp Tree.cpp symbolTable.cpp semantic.cpp
-HDRS = scanType.h ourgetopt.h Tree.h symbolTable.h semantic.h
-OBJS = lex.yy.o parser.tab.o ourgetopt.o Tree.o symbolTable.o semantic.o
+SRCS = scanner.l parser.y ourgetopt.cpp Tree.cpp symbolTable.cpp semantic.cpp yyerror.cpp emitcode.cpp codegen.cpp
+HDRS = scanType.h ourgetopt.h Tree.h symbolTable.h semantic.h yyerror.h emitcode.h codegen.h
+OBJS = lex.yy.o parser.tab.o ourgetopt.o Tree.o symbolTable.o semantic.o yyerror.o emitcode.o codegen.o
 BIN  = c-
 CC   = g++
 CPPFLAGS = -std=c++11 -Wall -Wextra -pedantic -g
 LEX = flex
 #-Wcounterexamples
 BISONFLAGS = -v  -t -d
-TARNAME = pas03.tar
+TARNAME = pas07.tar
 
 $(BIN): $(OBJS)
 	$(CC) $(CCFLAGS) $(OBJS) $(LIBS) -o $(BIN)
@@ -29,7 +29,7 @@ all:
 .PHONY : clean
 clean:
 	@echo "cleaning..."
-	rm -f $(BIN) $(OBJS) lex.yy.c parser.tab.c parser.tab.h parser.output *~
+	rm -f $(BIN) $(OBJS) lex.yy.c parser.tab.c parser.output *.in *~
 	rm -rf $(TARNAME)
 .PHONY : tar
 tar:
